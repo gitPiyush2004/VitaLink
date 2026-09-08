@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@vitalink/contracts": ["../../packages/contracts/src/index.ts"],
+      "@vitalink/contracts/*": ["../../packages/contracts/src/*"],
+      "@vitalink/connectors": ["../../packages/connectors/src/index.ts"],
+      "@vitalink/connectors/*": ["../../packages/connectors/src/*"],
+      "@vitalink/graph": ["../../packages/graph/src/index.ts"],
+      "@vitalink/graph/*": ["../../packages/graph/src/*"],
+      "@config/*": ["../api/src/config/*"],
+      "@shared/*": ["../api/src/shared/*"],
+      "@modules/*": ["../api/src/modules/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/*/src/**/*.ts", "../api/src/**/*.ts"]
+}

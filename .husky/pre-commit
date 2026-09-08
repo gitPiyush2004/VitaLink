@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Formats and lints only the staged files, then runs the cheap repository-wide
+# gates. The expensive ones (typecheck, tests) run in CI — a pre-commit hook that
+# takes thirty seconds gets bypassed with --no-verify, which protects nothing.
+npx lint-staged
+npm run gate:secrets

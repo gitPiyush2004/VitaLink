@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* Language and module system.
+       CommonJS is deliberate: it keeps relative imports extension-free, which
+       keeps the code readable for someone learning the stack. See ADR-0002. */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": true,
+    "isolatedModules": true,
+
+    /* PART 3A.4 — the strictness contract. Every one of these is deliberate. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true,
+
+    /* Workspace packages are consumed as TypeScript source, not as build output.
+       There is therefore no package build step to keep in sync. See ADR-0003. */
+    "baseUrl": ".",
+    "paths": {
+      "@vitalink/contracts": ["packages/contracts/src/index.ts"],
+      "@vitalink/contracts/*": ["packages/contracts/src/*"],
+      "@vitalink/connectors": ["packages/connectors/src/index.ts"],
+      "@vitalink/connectors/*": ["packages/connectors/src/*"],
+      "@vitalink/graph": ["packages/graph/src/index.ts"],
+      "@vitalink/graph/*": ["packages/graph/src/*"],
+      "@vitalink/ui": ["packages/ui/src/index.ts"],
+      "@vitalink/ui/*": ["packages/ui/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", "coverage"]
+}

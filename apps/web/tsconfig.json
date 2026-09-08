@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client", "vitest/globals"],
+    "paths": {
+      "@vitalink/contracts": ["../../packages/contracts/src/index.ts"],
+      "@vitalink/contracts/*": ["../../packages/contracts/src/*"],
+      "@vitalink/ui": ["../../packages/ui/src/index.ts"],
+      "@vitalink/ui/*": ["../../packages/ui/src/*"],
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "../../packages/contracts/src/**/*.ts",
+    "../../packages/ui/src/**/*.tsx",
+    "../../packages/ui/src/**/*.ts",
+    "vite.config.ts"
+  ]
+}

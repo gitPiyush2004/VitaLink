@@ -1,0 +1,131 @@
+# Vitalink, whole system, one command:
+#
+#   docker compose -f infra/docker-compose.yml up
+#
+# Six services and no orchestrator. That is deliberate (ADR-0006): Kubernetes
+# would add a control plane, a manifest language and an ingress controller to a
+# system that runs on one machine, and none of that is part of the research
+# question.
+#
+# The Node services run their TypeScript directly through tsx rather than a
+# compiled bundle. See ADR-0003 for why, and for what would change if this were
+# a real deployment.
+
+name: vitalink
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: vitalink
+      MONGO_INITDB_ROOT_PASSWORD: vitalink
+      MONGO_INITDB_DATABASE: vitalink
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      # Runs once, on an empty data directory: creates the app user and the
+      # time-series collection, which cannot be created implicitly.
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # appendonly keeps the queue and the refresh-token store across a restart.
+    # Losing them would log every user out and drop scheduled ingestion jobs.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  brain:
+    build:
+      context: ..
+      dockerfile: apps/brain/Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      # The brain is stateless and has no database access at all, by design
+      # (PART 3A.8). Note the absence of MONGO_URI here — that is the point.
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://vitalink:vitalink@mongo:27017/vitalink?authSource=admin
+      REDIS_URL: redis://redis:6379
+      BRAIN_BASE_URL: http://brain:8000
+    ports:
+      - "4000:4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      brain:
+        condition: service_started
+
+  workers:
+    build:
+      context: ..
+      dockerfile: apps/workers/Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://vitalink:vitalink@mongo:27017/vitalink?authSource=admin
+      REDIS_URL: redis://redis:6379
+      BRAIN_BASE_URL: http://brain:8000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  mongo-data:
+  redis-data:

@@ -1,0 +1,71 @@
+{
+  "name": "vitalink",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-data pharmaceutical supply-chain resilience platform",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "apps/api",
+    "apps/workers",
+    "apps/web",
+    "packages/contracts",
+    "packages/connectors",
+    "packages/graph",
+    "packages/ui"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @vitalink/api",
+    "dev:workers": "npm run dev --workspace @vitalink/workers",
+    "dev:web": "npm run dev --workspace @vitalink/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit -p apps/api && tsc --noEmit -p apps/workers && tsc --noEmit -p apps/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gate:provenance": "tsx scripts/gates/gate-1-provenance.ts",
+    "gate:no-fixtures": "tsx scripts/gates/gate-2-no-fixtures.ts",
+    "gate:no-http": "tsx scripts/gates/gate-3-no-direct-http.ts",
+    "gate:reliability": "bash scripts/gates/gate-4-reliability.sh",
+    "gate:no-fake-quotes": "tsx scripts/gates/gate-5-no-fake-quotes.ts",
+    "gate:secrets": "tsx scripts/gates/gate-secrets.ts",
+    "gates": "npm run gate:provenance && npm run gate:no-fixtures && npm run gate:no-http && npm run gate:no-fake-quotes && npm run gate:secrets",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run gates",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.10.6",
+    "@vitest/coverage-v8": "5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-import-x": "^4.17.1",
+    "globals": "^17.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^8.2.2",
+    "vitest": "5.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings 0"
+    ],
+    "*.{js,cjs,mjs,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "bash -c 'cd apps/brain && ruff format --force-exclude'",
+      "bash -c 'cd apps/brain && ruff check --fix --force-exclude'"
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+name: ci
+
+# CI runs exactly `npm run verify`, the same command available locally, so
+# "it passes on my machine" and "it passes in CI" cannot diverge (PART 3A.4).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: node — format, lint, typecheck, tests, gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: format
+        run: npm run format:check
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: unit tests
+        run: npm run test
+
+      - name: gates 1, 2, 3, 5 and secret scan
+        run: npm run gates
+
+  brain:
+    name: brain — ruff, mypy, pytest (includes GATE 4)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/brain
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/brain/requirements-dev.txt
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: ruff format check
+        run: ruff format --check .
+
+      - name: ruff lint
+        run: ruff check .
+
+      - name: mypy strict
+        run: mypy app
+
+      # GATE 4: reproduces the configuration table published in arXiv:2107.09167.
+      - name: pytest
+        run: pytest -q

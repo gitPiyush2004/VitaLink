@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+coverage
+apps/brain/.venv
+eval/snapshots
+package-lock.json
+*.ipynb
