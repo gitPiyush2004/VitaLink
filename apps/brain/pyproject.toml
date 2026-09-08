@@ -1,0 +1,85 @@
+[project]
+name = "vitalink-brain"
+version = "0.1.0"
+description = "Vitalink compute service: reliability, optimisation and ML"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["."]
+
+[tool.ruff.lint]
+# The same spirit as the TypeScript config: strictness that catches real bugs,
+# plus complexity budgets so a function cannot quietly become unexplainable.
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # import sorting
+  "N",    # pep8 naming
+  "UP",   # pyupgrade
+  "B",    # bugbear
+  "A",    # builtin shadowing
+  "C4",   # comprehensions
+  "SIM",  # simplify
+  "RET",  # return consistency
+  "ARG",  # unused arguments
+  "PTH",  # use pathlib
+  "PL",   # pylint subset
+  "RUF",
+  "ANN",  # type annotations required
+  "D",    # docstrings
+]
+ignore = [
+  "D203",  # conflicts with D211
+  "D213",  # conflicts with D212
+  # The reliability module deliberately uses the paper's single-letter names so
+  # that the code and the paper can be read side by side.
+  "E741",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# A test's name IS its documentation — `test_a_drug_with_no_recalls_falls_back_
+# rather_than_being_called_perfect` says more than any docstring would — so the
+# docstring rules are off here. Magic numbers are the point of a test too.
+"tests/*" = ["D101", "D102", "D103", "PLR2004", "PLR0913", "ANN001", "PLC0415"]
+# `__init__.py` files here are package markers with nothing in them.
+"**/__init__.py" = ["D104"]
+# The model genuinely has nine parameters: three redundancy counts and six rates.
+# Bundling them into an options object would hide the correspondence with the
+# paper's notation, which is the one thing this file optimises for.
+"app/domain/reliability.py" = ["PLR0913"]
+"app/domain/rate_estimation.py" = ["PLR0913"]
+# FastAPI's whole dependency-injection mechanism is Depends() in a default
+# argument. B008 exists to catch accidental shared mutable defaults, which this
+# is not.
+"app/routers/*" = ["B008"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+warn_return_any = true
+disallow_untyped_defs = true
+# `disallow_any_explicit` is deliberately NOT enabled. pydantic's own
+# `ConfigDict` is a TypedDict with Any-typed values, so turning it on flags
+# every `model_config = ConfigDict(...)` line in schemas.py — a lint failure
+# about a library's types, not about ours. `strict = true` already forbids
+# implicit Any, untyped defs and untyped calls, which is the guarantee that
+# matters; the TypeScript side gets the equivalent from
+# @typescript-eslint/no-explicit-any.
+no_implicit_optional = true
+show_error_codes = true
+files = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"

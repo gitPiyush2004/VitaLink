@@ -64,8 +64,7 @@
       "prettier --write"
     ],
     "*.py": [
-      "bash -c 'cd apps/brain && ruff format --force-exclude'",
-      "bash -c 'cd apps/brain && ruff check --fix --force-exclude'"
+      "bash scripts/dev/lint-python.sh"
     ]
   }
 }

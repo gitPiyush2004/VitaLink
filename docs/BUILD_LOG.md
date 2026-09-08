@@ -182,3 +182,106 @@ EML. All six have registry entries with their rate limits and TTLs; none has a
 client yet. The MVP's graph is built from openFDA plus Comtrade, and the missing
 sources are the difference between a graph and a _complete_ graph — which is a
 Phase 4 concern, not a Phase 1 one.
+
+---
+
+## Phase 5 (brought forward) — QUANTIFY and GATE 4 (gate: passed)
+
+Brought forward ahead of SENSE, VERIFY and MAP on the spec's own instruction:
+"do not build the dashboard before `test_reliability.py` is green", and more
+practically because this is the one component whose failure would invalidate
+everything downstream. If the reliability model cannot reproduce the paper, the
+Fragility Index is just a number I made up, and no amount of pipeline around it
+would fix that.
+
+Built `apps/brain`: FastAPI, layered `routers/` → `services/` → `domain/`, with
+no database driver in `requirements.txt` and no `MONGO_URI` in its Compose
+environment. That absence is the design (ADR-0006): the brain is stateless, so it
+cannot quietly become a second owner of truth.
+
+`domain/reliability.py` implements equations 1–4 and the eq. 6 relation from
+arXiv:2107.09167 as pure functions. `domain/paper_baseline.py` holds the paper's
+published parametrisation in its own module, so the line between "the equations"
+and "one parametrisation of the equations" cannot blur.
+
+### GATE 4 result
+
+| `(z_api, z_plant, z_line)` | Computed `s` | Paper publishes |
+| -------------------------- | ------------ | --------------- |
+| (1, 1, 1)                  | 9.914 %      | 10 %            |
+| (2, 1, 1)                  | 4.071 %      | 4 %             |
+| (2, 2, 1)                  | 0.555 %      | 1 %             |
+
+**Green.** The tolerance is 0.5 pp, which is the rounding interval of figures
+quoted to the nearest whole percent — not a tolerance chosen to make the test
+pass. The exact values are pinned separately at 1e-7, so a refactor that shifted
+the arithmetic by a tenth of a percentage point would fail even though it would
+still round correctly.
+
+The first run failed, and it failed for the right reason: my hand-computed
+regression pins were off in the sixth decimal place. The paper-table assertions
+passed immediately. The pins now hold the values the implementation produces,
+which agreed with the independent hand calculation to five decimal places.
+
+**The (2,2,1) row is worth stating plainly.** It computes 0.555 % against a
+published 1 %, a 0.45 pp gap — the largest in the table. It is inside the rounding
+interval, but "rounds to the same whole percent" is a weaker claim than "matches
+to three decimals", and a reader deserves to know which one is being made. There
+is a test named `test_the_largest_gap_to_the_paper_is_documented` that asserts it
+explicitly rather than letting a loose tolerance hide it.
+
+### What is transcribed and what is derived
+
+The paper's full text was not accessible during the build; the equations came from
+the project specification, which quotes them. Equations 1–4 and the eq. 6 relation
+are therefore transcribed. **Mean uptime is not.** Rather than guess at the
+paper's closed form for `U` and label the guess "paper eq. 5", it is computed by
+the frequency–duration method of classical reliability theory: the system's
+up-to-down transition frequency `nu` is derived directly, then `U = r / nu`. The
+paper's `D = U/r - U` then holds as an identity, and the test suite asserts it in
+both directions — including `r = U / (U + D)`, which would catch a units error
+immediately. The derivation is labelled as ours on every number it produces and in
+the model card. Claiming otherwise would have been the exact overclaim this
+project exists to avoid.
+
+### Beyond the paper
+
+The test file asserts properties the paper does not, because the scenario engine's
+whole premise depends on them: monotonicity in every redundancy count, and that a
+second **supplier** helps more than a second **line**. The second is the paper's
+substantive finding and the reason this model beats an additive risk score —
+suppliers fail less often but take 1.2 years to recover against a line's 29 days.
+An additive score gets that backwards, which is why it is the named baseline in
+the results chapter.
+
+### Rate estimation, and the case that matters
+
+`domain/rate_estimation.py` fits `lambda` from openFDA recall counts (Poisson MLE)
+and `mu` from resolved shortage durations (exponential MLE, matching the model's
+own distributional assumption). Below three events it falls back to the paper's
+baseline and tags that specific rate `PAPER_BASELINE_FALLBACK`.
+
+The important case is a drug with **zero** recalls. Fitting would give
+`lambda = 0`, a perfectly reliable drug, and a Fragility Index of zero — a
+confident claim built on no evidence at all. It falls back instead, and there is a
+test named after that scenario.
+
+Two limitations are now attached to every number the service returns, in the
+`Quantity`'s `assumptions`, rather than living only in a document: `mu` is fitted
+only from resolved shortages and is therefore optimistic, and `z_api` counts the
+observable market rather than API manufacturers.
+
+**Passing at the gate:** 116 pytest tests including GATE 4; ruff clean; ruff
+format clean; mypy `strict` clean over 13 source files.
+
+**One toolchain decision reversed during this phase:** `disallow_any_explicit`
+was enabled in the mypy config and then removed. It flags every
+`model_config = ConfigDict(...)` line, because pydantic's own `ConfigDict` is a
+TypedDict with `Any`-typed values — a lint failure about a library's types rather
+than ours. `strict = true` already forbids implicit `Any`, untyped defs and
+untyped calls, which is the guarantee that matters. Recorded here rather than
+silently dropped.
+
+**Deferred:** `z_plant` from DailyMed SPL establishments (the client is not built,
+so `z_plant` is currently 1 and says so). The ₹ loss band, which needs NPPA
+ceiling prices. Both are Phase 4 concerns.
