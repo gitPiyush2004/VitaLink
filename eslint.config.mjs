@@ -181,9 +181,11 @@ export default tseslint.config(
     },
   },
 
-  // Config files declare the named constants, so magic numbers are the point there.
+  // Declaration files — config, constants, registries — are where the named
+  // numbers live. `6 * SECONDS_PER_HOUR` in a source registry is clearer than a
+  // named constant per TTL, which is the outcome the rule is trying to produce.
   {
-    files: ['**/config/**/*.ts', '**/*.config.ts', '*.mjs', '*.cjs'],
+    files: ['**/config/**/*.ts', '**/*.config.ts', '**/*-registry.ts', '*.mjs', '*.cjs'],
     rules: { 'no-magic-numbers': 'off', 'import-x/no-default-export': 'off' },
   },
 

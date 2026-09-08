@@ -1,0 +1,280 @@
+/**
+ * openFDA — four endpoints, one client.
+ *
+ * Query syntax note, learned the hard way in the first probe run: openFDA's
+ * `search` parameter treats `+` as a term separator, and `URLSearchParams`
+ * percent-encodes a literal `+` as `%2B`. So a query written as
+ * `a+AND+b` arrives as `a%2BAND%2Bb` and matches nothing (openFDA answers 404).
+ * Write clauses separated by spaces — `a AND b` — and let `URLSearchParams`
+ * encode the space as `+`, which is what openFDA expects.
+ *
+ * This is the most important source in the project. It supplies:
+ *
+ *   drug/ndc          the product universe, and the distinct manufacturer count
+ *                     that becomes `z_api` in the reliability model
+ *   drug/label        active ingredients, and the storage-and-handling text that
+ *                     the cold-chain flag and `temperature_requirement` are read
+ *                     from — never asked of the user
+ *   drug/enforcement  recall history, which is both a disruption signal and the
+ *                     series that lambda (failure rate) is fitted from
+ *   drug/shortages    shortage events with start and resolution dates, which mu
+ *                     (repair rate) is fitted from, and which are the ground
+ *                     truth for the evaluation harness
+ *
+ * One real-world detail worth knowing: openFDA answers a query with no matches
+ * with **HTTP 404**, not an empty result array. Treating that as an error would
+ * turn "this drug has never been recalled" — a perfectly good, and important,
+ * finding — into a failed ingestion run. `search` returns an empty list instead.
+ */
+
+import { z } from 'zod';
+
+import type { CachedHttpClient, Fetched } from '../http/cached-client';
+import { ConnectorError } from '../http/connector-error';
+
+import { sourceConfig } from './source-registry';
+
+const MAX_LIMIT = 1000;
+
+/** openFDA wraps every response the same way. */
+const metaSchema = z.object({
+  disclaimer: z.string().optional(),
+  last_updated: z.string().optional(),
+  results: z
+    .object({
+      skip: z.number(),
+      limit: z.number(),
+      total: z.number(),
+    })
+    .optional(),
+});
+
+function envelopeSchema<T extends z.ZodType>(resultSchema: T) {
+  return z.object({ meta: metaSchema, results: z.array(resultSchema) });
+}
+
+// ---------------------------------------------------------------------------
+// Result shapes
+//
+// Only the fields Vitalink actually uses are declared, and almost all of them
+// are optional. openFDA is a union of many submissions and a field present on
+// one product is routinely absent on the next; a strict schema here would reject
+// most of the corpus.
+// ---------------------------------------------------------------------------
+
+export const ndcProductSchema = z.object({
+  product_ndc: z.string(),
+  generic_name: z.string().optional(),
+  brand_name: z.string().optional(),
+  labeler_name: z.string().optional(),
+  dosage_form: z.string().optional(),
+  route: z.array(z.string()).optional(),
+  marketing_category: z.string().optional(),
+  active_ingredients: z
+    .array(z.object({ name: z.string(), strength: z.string().optional() }))
+    .optional(),
+  pharm_class: z.array(z.string()).optional(),
+  finished: z.boolean().optional(),
+});
+export type NdcProduct = z.infer<typeof ndcProductSchema>;
+
+export const labelSchema = z.object({
+  id: z.string().optional(),
+  effective_time: z.string().optional(),
+  /** The section the temperature requirement is parsed from. */
+  storage_and_handling: z.array(z.string()).optional(),
+  how_supplied: z.array(z.string()).optional(),
+  openfda: z
+    .object({
+      generic_name: z.array(z.string()).optional(),
+      brand_name: z.array(z.string()).optional(),
+      manufacturer_name: z.array(z.string()).optional(),
+      substance_name: z.array(z.string()).optional(),
+      unii: z.array(z.string()).optional(),
+      product_ndc: z.array(z.string()).optional(),
+      pharm_class_epc: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+export type DrugLabel = z.infer<typeof labelSchema>;
+
+export const enforcementSchema = z.object({
+  recall_number: z.string(),
+  /** YYYYMMDD. Converted at the boundary, in the ingestion mapper. */
+  report_date: z.string().optional(),
+  recall_initiation_date: z.string().optional(),
+  center_classification_date: z.string().optional(),
+  classification: z.string().optional(),
+  status: z.string().optional(),
+  product_description: z.string().optional(),
+  reason_for_recall: z.string().optional(),
+  recalling_firm: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  voluntary_mandated: z.string().optional(),
+  product_quantity: z.string().optional(),
+  openfda: z
+    .object({
+      generic_name: z.array(z.string()).optional(),
+      brand_name: z.array(z.string()).optional(),
+      manufacturer_name: z.array(z.string()).optional(),
+      substance_name: z.array(z.string()).optional(),
+      product_ndc: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+export type EnforcementReport = z.infer<typeof enforcementSchema>;
+
+export const shortageSchema = z.object({
+  /** Field names differ slightly across openFDA revisions, so both are optional. */
+  generic_name: z.string().optional(),
+  proprietary_name: z.string().optional(),
+  company_name: z.string().optional(),
+  status: z.string().optional(),
+  /** ISO date. Present on resolved records; this is what mu is fitted from. */
+  initial_posting_date: z.string().optional(),
+  update_date: z.string().optional(),
+  change_date: z.string().optional(),
+  shortage_reason: z.string().optional(),
+  availability_information: z.string().optional(),
+  therapeutic_category: z.array(z.string()).optional(),
+  dosage_form: z.string().optional(),
+  strength: z.array(z.string()).optional(),
+  presentation: z.string().optional(),
+  openfda: z
+    .object({
+      generic_name: z.array(z.string()).optional(),
+      manufacturer_name: z.array(z.string()).optional(),
+      substance_name: z.array(z.string()).optional(),
+      product_ndc: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+export type ShortageRecord = z.infer<typeof shortageSchema>;
+
+// ---------------------------------------------------------------------------
+// Client
+// ---------------------------------------------------------------------------
+
+export type OpenFdaQuery = {
+  /** The Lucene-style `search` expression, e.g. `generic_name:"heparin sodium"`. */
+  search: string;
+  limit?: number;
+  skip?: number;
+  /** Aggregation field. When set, openFDA returns counts instead of records. */
+  count?: string;
+  sort?: string;
+};
+
+const ENDPOINTS = {
+  ndc: 'openfda_ndc',
+  label: 'openfda_label',
+  enforcement: 'openfda_enforcement',
+  shortages: 'openfda_shortages',
+} as const;
+
+type EndpointName = keyof typeof ENDPOINTS;
+
+/**
+ * openFDA's count response: `[{ term, count }, ...]`.
+ * Used to get a distinct manufacturer count in one request instead of paging.
+ */
+export const countBucketSchema = z.object({ term: z.string(), count: z.number() });
+export type CountBucket = z.infer<typeof countBucketSchema>;
+
+export class OpenFdaClient {
+  constructor(private readonly http: CachedHttpClient) {}
+
+  searchNdc(query: OpenFdaQuery): Promise<Fetched<NdcProduct[]>> {
+    return this.search('ndc', query, ndcProductSchema);
+  }
+
+  searchLabels(query: OpenFdaQuery): Promise<Fetched<DrugLabel[]>> {
+    return this.search('label', query, labelSchema);
+  }
+
+  searchEnforcement(query: OpenFdaQuery): Promise<Fetched<EnforcementReport[]>> {
+    return this.search('enforcement', query, enforcementSchema);
+  }
+
+  searchShortages(query: OpenFdaQuery): Promise<Fetched<ShortageRecord[]>> {
+    return this.search('shortages', query, shortageSchema);
+  }
+
+  /**
+   * Runs a `count` aggregation.
+   *
+   * This is how `z_api` is obtained: one request counting distinct
+   * `labeler_name` values for a generic name, rather than paging every product
+   * and de-duplicating client-side.
+   */
+  count(
+    endpoint: EndpointName,
+    query: OpenFdaQuery & { count: string },
+  ): Promise<Fetched<CountBucket[]>> {
+    return this.search(endpoint, query, countBucketSchema);
+  }
+
+  private async search<T>(
+    endpoint: EndpointName,
+    query: OpenFdaQuery,
+    resultSchema: z.ZodType<T>,
+  ): Promise<Fetched<T[]>> {
+    const config = sourceConfig(ENDPOINTS[endpoint]);
+    const url = buildUrl(config.baseUrl, query);
+
+    try {
+      const response = await this.http.getJson(
+        {
+          sourceId: config.id,
+          displayName: config.displayName,
+          url,
+          queryDescription: describeQuery(query),
+          minIntervalMs: config.minIntervalMs,
+          cacheTtlSeconds: config.cacheTtlSeconds,
+        },
+        envelopeSchema(resultSchema),
+      );
+
+      return { ...response, data: response.data.results };
+    } catch (error) {
+      // A 404 from openFDA means "nothing matched", which is a result, not a
+      // failure. See the note at the top of this file.
+      if (error instanceof ConnectorError && error.kind === 'not_found') {
+        return {
+          data: [],
+          provenance: {
+            source_name: config.displayName,
+            source_url: url,
+            query: describeQuery(query),
+            fetched_at: new Date().toISOString(),
+          },
+          fromCache: false,
+          rawBody: '{"results":[]}',
+        };
+      }
+      throw error;
+    }
+  }
+}
+
+function buildUrl(baseUrl: string, query: OpenFdaQuery): string {
+  const params = new URLSearchParams({ search: query.search });
+
+  if (query.count !== undefined) params.set('count', query.count);
+  if (query.limit !== undefined) params.set('limit', String(Math.min(query.limit, MAX_LIMIT)));
+  if (query.skip !== undefined) params.set('skip', String(query.skip));
+  if (query.sort !== undefined) params.set('sort', query.sort);
+
+  return `${baseUrl}?${params.toString()}`;
+}
+
+/** The one-line description shown in the UI's Sources drawer. */
+function describeQuery(query: OpenFdaQuery): string {
+  const parts = [`search=${query.search}`];
+  if (query.count !== undefined) parts.push(`count=${query.count}`);
+  if (query.limit !== undefined) parts.push(`limit=${String(query.limit)}`);
+  if (query.skip !== undefined) parts.push(`skip=${String(query.skip)}`);
+  return parts.join('&');
+}
