@@ -7,7 +7,9 @@
     "start": "tsx --env-file=../../.env src/main.ts",
     "typecheck": "tsc --noEmit",
     "bootstrap:org": "tsx --env-file=../../.env src/scripts/create-org.ts",
-    "refresh:catalog": "tsx --env-file=../../.env src/scripts/refresh-catalog.ts"
+    "refresh:catalog": "tsx --env-file=../../.env src/scripts/refresh-catalog.ts",
+    "rebuild:graph": "tsx --env-file=../../.env src/scripts/rebuild-graph.ts",
+    "cascade": "tsx --env-file=../../.env src/scripts/run-cascade.ts"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",

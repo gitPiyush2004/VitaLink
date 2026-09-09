@@ -441,3 +441,131 @@ cost twenty minutes and is commented in the Compose file.
 the traversal both exist; the wiring between them is next), Comtrade country
 edges (blocked on the free key), DailyMed establishments for a real `z_plant`
 cross-check, and NPPA ceiling prices for the rupee band.
+
+---
+
+## Phase 4b / 6 — MAP persistence and TRACE (gate: passed)
+
+Built the `graph` module (persisted nodes and edges, whole-graph materialisation,
+a rebuild that re-derives from the catalogue) and the `cascade` module (path
+enumeration, the exposure formula, cover projection). Both were exercised against
+the live catalogue, and doing so produced the most consequential finding in the
+project so far.
+
+### The graph, built from live openFDA
+
+```
+nodes upserted: 333
+edges upserted: 443
+```
+
+The rebuild is a full re-derivation rather than an incremental patch. Every node
+and edge id is a deterministic slug, so a rebuild is idempotent — and an
+incremental updater would have to work out which edges to _delete_ when a drug's
+manufacturer list shrinks, which is exactly the bug that leaves a stale edge for a
+cascade to traverse.
+
+The build reports the three relations it **cannot** construct, as data rather than
+as a log line, because the UI has to say "no country dependency observed" next to
+an empty panel. An empty panel with no explanation reads as "no risk", which is
+the opposite of the truth.
+
+### Finding: the graph's edges were pointing the wrong way
+
+The specification's stage-3 diagram writes the manufacturer relation as
+`drug --MADE_BY--> manufacturer`, which is how the phrase reads in English. The
+cascade propagates _forward_. Those two are incompatible, and running it is what
+showed it:
+
+```
+$ cascade manufacturer:hospira-inc 30
+The shock at manufacturer:hospira-inc reaches no drug in the current graph.
+```
+
+Hospira labels four of the eight seed drugs. Forward traversal from a manufacturer
+had no outbound edge to follow, because every `MADE_BY` edge pointed _into_ it.
+
+That is not an edge case — it is the most common real disruption in the system.
+openFDA's `drug/enforcement` reports name a `recalling_firm`, so a manufacturer is
+precisely where an alert lands. A cascade engine that cannot propagate from a
+manufacturer cannot process the majority of its own inputs.
+
+The fix, recorded as **ADR-0011**: every edge is oriented along the direction
+**supply flows**, not along the English reading of its relation name. Supply flows
+from the manufacturer into the drug, so the edge is stored
+`manufacturer --MADE_BY--> drug`. The relation name stays as the spec's enum
+declares it; only the orientation changes, and the rule is stated in three places
+because `MADE_BY` reads oddly in that direction and that is the cost.
+
+The alternative — keeping the spec's direction and making the traversal
+relation-aware — was rejected because it puts the flow semantics in the traversal
+code, where nobody reading the graph in the database or in a Cytoscape render can
+see them. Two people would then disagree about which way an edge really points and
+both would be right.
+
+The 390 stale `MADE_BY` edges from before the change were deleted explicitly,
+along with the one cascade computed on them, rather than left as unreachable rows.
+
+### The cascade, after the fix
+
+```
+$ cascade manufacturer:hospira-inc 30
+shock: Hospira, Inc.  [manufacturer]
+
+EXPOSED DRUGS (4), most exposed first:
+  methotrexate              exposure 1.8%  cover 29.4 d  stockout day 12-32
+  vancomycin hydrochloride  exposure 1.2%  cover 29.6 d  stockout day 12-33
+  atropine sulfate          exposure 1.2%  cover 29.6 d  stockout day 12-33
+  heparin sodium            exposure 1.1%  cover 29.7 d  stockout day 12-33
+```
+
+The low exposure figures are the correct conclusion, not a bug: Hospira holds a
+small share of each drug's observed listings, so a Hospira-only shock is a small
+shock to each of those drugs. The stored `calculation_method` says so in full,
+with every term substituted:
+
+> `exposure = [sum over paths of prod(edge weights) * decay^length] * (1 + HHI) /
+> max(1, total makers - affected makers), clamped to [0, 1]. Here: 1 path(s)
+> summed to 0.0176 at decay 0.75; HHI 0.0454 gives a concentration multiplier of
+> 1.0454; 41 makers less 41 affected gives a redundancy divisor of 1. Raw 0.0184.
+> Every maker of an exposed drug is counted as affected, because the OPERATES
+> relation is not ingested and there is no facility geography to narrow it — which
+> OVERSTATES exposure.*
+
+That last sentence is the one that matters. Without facility geography the cascade
+cannot tell which of a drug's 41 makers a shock actually touches, so it assumes
+all of them — which inflates exposure, in the safe direction, and says so on the
+number rather than in a document.
+
+### Cover projection: the covenant forcing a design
+
+None of the three inputs stage 4 asks for is publicly available — not inventory,
+not incoming supply, not hospital demand. The spec's modelled route needs OSM
+catchments and district populations, which are not ingested either.
+
+Two of the three possible responses were wrong: inventing a plausible inventory
+curve (exactly what Rule 1 forbids), and reporting nothing at all (the stockout
+day is the cascade's most useful output). What the code does instead is take days
+of cover at t0 as an explicit **SCENARIO** input — the operator's own figure,
+which they genuinely know and no API does — and derive the projection from there.
+The band is a sensitivity range and is labelled as one, never as a confidence
+interval, and the whole assumption set travels on the number.
+
+The `assumed_cover_days` field on the request has **no default**, deliberately. A
+default would make the most consequential assumption in the projection invisible.
+
+One test in that file is worth naming: `takes the stockout band low from the low
+cover edge, not the high`. The pessimistic cover edge crosses the safety threshold
+_first_, so it produces the earlier day. Inverting it would report the optimistic
+day as the worst case, which is the wrong direction to be wrong in for a shortage
+tool and looks entirely plausible on screen.
+
+**Passing at the gate:** `npm run verify` green — 207 TypeScript tests, all five
+gates. The graph and a cascade both ran end to end against live openFDA data and a
+real Mongo. Gate 1 required nine new structural-count justifications in the
+cascade model, each written down with its reason rather than waved through.
+
+**Deferred:** the reliability call from the cascade into the Python brain (the
+service is wired and GATE 4 is green; joining them is a Phase 7 concern), and the
+physical layer, which is what would let a cascade terminate at a district
+population rather than at a drug.

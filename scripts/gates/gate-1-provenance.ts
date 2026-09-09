@@ -64,6 +64,30 @@ const STRUCTURAL_COUNTS = new Set([
   'cover_units_high',
   'low',
   'high',
+
+  // ---- Cascade records ---------------------------------------------------
+  // Path geometry. `path_weight` is the product of edge weights, each of which
+  // is itself a Quantity with its own provenance, and `length` is a hop count.
+  // Wrapping either would attach a second, redundant provenance to a number
+  // derived entirely from numbers that already carry one.
+  'path_weight',
+  'length',
+
+  // The cascade REQUEST's parameters. These are SCENARIO inputs — the operator
+  // chose them — and the cascade document's own top-level `provenance` records
+  // who ran it and when. A per-parameter envelope would say the same thing four
+  // times.
+  'duration_days',
+  'decay',
+  'max_depth',
+  'assumed_cover_days',
+
+  // Traversal diagnostics. We counted these ourselves during the run, so the
+  // provenance is "this cascade, at this timestamp" — which the parent document
+  // already states. They exist so pruning is visible rather than silent.
+  'paths_pruned_by_weight',
+  'paths_pruned_by_cap',
+  'dropped_edges',
 ]);
 
 /**

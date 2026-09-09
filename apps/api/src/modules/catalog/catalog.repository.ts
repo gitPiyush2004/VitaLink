@@ -26,7 +26,7 @@
  */
 
 import { MAX_PAGE_SIZE } from '@config/constants';
-import { fromProvenance, fromQuantity, toQuantity } from '@shared/db/mappers';
+import { fromProvenance, fromQuantity, toProvenance, toQuantity } from '@shared/db/mappers';
 import { DatabaseError } from '@shared/errors';
 
 import type {
@@ -79,6 +79,7 @@ function toDrugEntity(doc: DrugDoc): DrugEntity {
     isSingleSource: doc.is_single_source,
     apiTierVisibility: doc.api_tier_visibility,
     storageConditionsStated: doc.storage_conditions_stated,
+    provenance: toProvenance(doc.provenance),
     createdAt: doc.created_at.toISOString(),
   };
 }
@@ -125,6 +126,7 @@ function toManufacturerEntity(doc: ManufacturerDoc): ManufacturerEntity {
     capacityIndex: toQuantity(doc.capacity_index),
     registeredFacilityCount: toQuantity(doc.registered_facility_count),
     distinctProductCount: toQuantity(doc.distinct_product_count),
+    provenance: toProvenance(doc.provenance),
     createdAt: doc.created_at.toISOString(),
   };
 }
@@ -138,6 +140,7 @@ function toIngredientEntity(doc: IngredientDoc): IngredientEntity {
     atcCode: doc.atc_code,
     hsCodes: doc.hs_codes,
     maxCountryDependencyShare: toQuantity(doc.max_country_dependency_share),
+    provenance: toProvenance(doc.provenance),
     createdAt: doc.created_at.toISOString(),
   };
 }

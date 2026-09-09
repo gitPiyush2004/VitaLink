@@ -37,7 +37,9 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run gates",
     "prepare": "husky || true",
     "bootstrap:org": "npm run bootstrap:org --workspace @vitalink/api --",
-    "refresh:catalog": "npm run refresh:catalog --workspace @vitalink/api --"
+    "refresh:catalog": "npm run refresh:catalog --workspace @vitalink/api --",
+    "rebuild:graph": "npm run rebuild:graph --workspace @vitalink/api --",
+    "cascade": "npm run cascade --workspace @vitalink/api --"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

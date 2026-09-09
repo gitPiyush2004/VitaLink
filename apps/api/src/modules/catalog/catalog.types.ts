@@ -42,6 +42,8 @@ export type DrugEntity = {
   apiTierVisibility: ApiTierVisibility;
   storageConditionsStated: string[];
 
+  /** The record's own provenance, so anything derived from it can inherit one. */
+  provenance: Provenance;
   createdAt: string;
 };
 
@@ -53,6 +55,7 @@ export type ManufacturerEntity = {
   capacityIndex: Quantity | null;
   registeredFacilityCount: Quantity | null;
   distinctProductCount: Quantity | null;
+  provenance: Provenance;
   createdAt: string;
 };
 
@@ -64,6 +67,7 @@ export type IngredientEntity = {
   atcCode: string | null;
   hsCodes: string[];
   maxCountryDependencyShare: Quantity | null;
+  provenance: Provenance;
   createdAt: string;
 };
 

@@ -9,7 +9,12 @@ import { createCatalogRepository } from './catalog.repository';
 import { CatalogService } from './catalog.service';
 
 export { CatalogService } from './catalog.service';
-export type { DrugEntity, RefreshOutcome } from './catalog.types';
+export type {
+  DrugEntity,
+  IngredientEntity,
+  ManufacturerEntity,
+  RefreshOutcome,
+} from './catalog.types';
 
 /** A fully wired `CatalogService`, sharing the process-wide HTTP client. */
 export function createCatalogService(): CatalogService {

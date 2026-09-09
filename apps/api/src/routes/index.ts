@@ -10,6 +10,7 @@
 import { Router } from 'express';
 
 import { createAuthRouter } from '@modules/auth/auth.routes';
+import { createCascadeRouter } from '@modules/cascade/cascade.routes';
 import { createCatalogRouter } from '@modules/catalog/catalog.routes';
 
 export function createApiRouter(): Router {
@@ -17,6 +18,7 @@ export function createApiRouter(): Router {
 
   router.use('/auth', createAuthRouter());
   router.use('/catalog', createCatalogRouter());
+  router.use('/cascade', createCascadeRouter());
 
   return router;
 }
