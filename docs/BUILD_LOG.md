@@ -285,3 +285,159 @@ silently dropped.
 **Deferred:** `z_plant` from DailyMed SPL establishments (the client is not built,
 so `z_plant` is currently 1 and says so). The ₹ loss band, which needs NPPA
 ceiling prices. Both are Phase 4 concerns.
+
+---
+
+## Phase 4a — Catalogue and graph: the phase where real data changed the design
+
+Built `packages/graph` (graphology model, structural metrics, path enumeration)
+and the `catalog` module, which turns openFDA into the drug universe. Then ran it
+against live openFDA, and it went wrong in four separate ways, three of them
+invisible to synthetic test data. This entry is mostly about those, because they
+are worth more than the code.
+
+### Finding 1: `z_api` cannot be derived from openFDA at all
+
+Attempt one used the raw distinct labeler count. Heparin sodium returned **47**,
+which fed into `r_api = 1 - p^47` gives a Fragility Index of essentially zero for
+a drug that has been in recorded shortage.
+
+Attempt two replaced the count with the **numbers-equivalent of the Herfindahl
+index**, `1 / HHI` — the standard industrial-organisation conversion from a share
+distribution to "the equivalent number of equal-sized firms". It discounts the
+long tail of one-listing relabelers arithmetically rather than through a
+hand-maintained exclusion list, and gave 19.6 for heparin instead of 47. Still
+enough for near-zero fragility, so the value was saturated at 4 on the argument
+that `r_api` moves by less than the model's own parameter uncertainty above that.
+
+Running that across the whole seed set is what settled it: **every drug came out
+at exactly 4.** Amoxicillin 57 labelers, metformin 128, insulin glargine 11,
+atropine 71 — all saturated to the same number. A metric that returns the same
+answer for every input is not a metric.
+
+The mistake was not the arithmetic, it was the **echelon**. `labeler_name` is
+whoever puts their name on the finished carton, which is a proxy for the
+finished-dose _plant_ tier — the paper's `z_plant` — and a reasonable one. It is
+not, and never was, a proxy for the API-supplier tier: dozens of finished-dose
+labelers routinely buy from a handful of upstream API producers, and openFDA does
+not publish who those are.
+
+So the derivation now reports what the data measures:
+
+- **`z_plant`** from the labeler numbers-equivalent. `DERIVED`, varies across
+  drugs, genuinely informative.
+- **`z_api`** from trade concentration when UN Comtrade data is available, and
+  otherwise **1, tagged `SCENARIO`**, with `api_tier_visibility: NOT_OBSERVED`
+  and a caveat stating plainly that this **overstates** fragility.
+
+Overstating is the deliberate direction to be wrong in for a resilience tool, and
+because the echelons are in series a `z_api` of 1 dominates — which is the
+correct conclusion: _these drugs are all exposed at a tier we cannot observe._
+Variation between drugs then comes from the per-drug fitted failure and repair
+rates, which openFDA genuinely does publish. It also makes the free Comtrade key
+load-bearing rather than nice-to-have, which is a true statement about the system.
+
+### Finding 2: openFDA silently truncates `count` aggregations
+
+A metformin labeler count returned exactly **100 buckets summing to 629 listings,
+with a minimum bucket of 1** — a cut-off tail, presented with nothing to indicate
+it had been cut off. Asking for openFDA's maximum raised metformin to 128
+labelers, and the client now returns `wasTruncated` so a floor is never reported
+as a total. The `calculation_method` on the stored number says so too.
+
+### Finding 3: the label parser was wrong three times, and one way was dangerous
+
+`temperature_requirement` is read from the real label (spec 6.5) and feeds a
+**hard constraint**: a carrier that cannot hold the range is eliminated outright.
+A wrong parse does not shade a score, it disqualifies the wrong carrier.
+
+**Round one — two regex bugs.** Insulin glargine parsed as `ambient`. The pattern
+was `/\b(?:...|refrigerat|...)\b/i`, and in "Refrigerated" the character after
+`refrigerat` is `e`, so the trailing `\b` never matched. The numeric fallback
+missed too, because labels write `36°F to 46°F` and the unit letter sits between
+the number and the word "to".
+
+**Round two — "strictest condition wins" is wrong.** With the regexes fixed,
+three drugs parsed as 2-8 °C and all three were wrong:
+
+| Drug         | Real label text                                                                              | Correct answer                      |
+| ------------ | -------------------------------------------------------------------------------------------- | ----------------------------------- |
+| cisplatin    | "Store at 20° to 25°C. **Do not refrigerate.**"                                              | 15-25C, refrigeration **forbidden** |
+| amoxicillin  | "Store dry powder at or below 25°C. Store **reconstituted** suspension under refrigeration." | 15-25C                              |
+| methotrexate | "Store at 20°C to 25°C. **After first puncture**, store vials at 2°C to 8°C."                | 15-25C                              |
+
+The cisplatin case is dangerous in both directions: it eliminates every correct
+carrier _and_ mandates refrigeration the label explicitly forbids. The rule that
+is actually right is the one a pharmacist would state: **the shipping condition is
+the one that applies to unopened, un-reconstituted product.** A negated condition
+is recorded as a `prohibited` entry, which turns out to be a useful hard
+constraint of its own — a reefer-only service is the wrong choice for cisplatin.
+
+**Round three — scope is sticky, and labels must not be merged.** Two more
+failures, both only visible on live data.
+
+The parser was receiving several labels' storage sections _joined into one
+string_. Those are different products. Three live insulin glargine labels gave
+BASAGLAR's `"Not In-Use (Unopened) Refrigerated (36°F to 46°F [2°C to 8°C])"`
+alongside LANGLARA's `"In-use (opened) ... Room temperature only (Do not
+refrigerate)"`. Joined, LANGLARA's in-use parenthetical prohibited 2-8 °C and
+cancelled BASAGLAR's requirement — and insulin came out ambient again, the exact
+failure round one was supposed to have fixed. Labels are now parsed individually
+and combined afterwards, and when products disagree that disagreement is reported
+rather than resolved silently: a shipment carries a specific NDC, not a generic
+name.
+
+The second was that a negation belongs to the **scope** its sentence sits in, not
+to the sentence alone. "Do not refrigerate" under an "In-use (opened)" heading
+forbids refrigeration of _opened_ product. The parser now walks clauses carrying a
+current scope, and a prohibition inherits it. Atropine's "AVOID FREEZING Store
+PHENOHYTRO ELIXIR at 20°-25°C" — a prohibition and a requirement in one
+unpunctuated clause — falls out of the same mechanism.
+
+Two regex details in there are load-bearing enough to have their own comments.
+`(?<!not )in-?use` exists because insulin labels write "Not In-Use (Unopened)" for
+the shipping condition, and a naive marker strips exactly the clause that matters.
+And `String.split` with a zero-width lookahead tests every position, so without
+that lookbehind the engine splits both before "Not" and before "In-Use", leaving a
+clause consisting of the single word "Not".
+
+### Finding 4: the layering lint caught a real violation in my own code
+
+The bootstrap script imported `OrgModel` and `createAuthRepository` directly, and
+`no-restricted-imports` refused it. The fix was not to relax the rule: every
+module now has an `index.ts` public surface exporting a wired service, and
+`AuthService` gained an `ensureOrg` method so the script never sees a model. That
+is the rule paying for itself on day one.
+
+### Live result
+
+```
+OK  heparin sodium            47 labelers   15-25C
+OK  amoxicillin               57 labelers   15-25C
+OK  insulin glargine          11 labelers   2-8C     cold chain + monitoring
+OK  cisplatin                 16 labelers   15-25C   FORBIDS 2-8C
+OK  metformin hydrochloride  128 labelers   15-25C
+OK  vancomycin hydrochloride  50 labelers   15-25C
+OK  methotrexate              41 labelers   15-25C
+OK  atropine sulfate          71 labelers   15-25C   FORBIDS frozen
+8 of 8 refreshed from live openFDA.
+```
+
+Every one of those temperature values is now correct against its real label, and
+every one was wrong at some point during this phase.
+
+**Passing at the gate:** `npm run verify` green — 169 TypeScript tests, gates 1,
+2, 3, 5 and the secret scan. 116 Python tests including GATE 4. The catalogue was
+populated end to end against live openFDA and a real Mongo, not a fixture.
+
+**One infrastructure note:** the Compose file maps Mongo to host port **27018**
+and Redis to **6380**, not the defaults. A locally-installed `mongod` binds
+`127.0.0.1:27017`, and macOS resolves `localhost` to `127.0.0.1` before the
+wildcard address Docker binds to — so a container on 27017 is silently shadowed
+and every connection lands on the local instance with the wrong credentials. That
+cost twenty minutes and is commented in the Compose file.
+
+**Deferred:** the `graph` module that persists nodes and edges (the catalogue and
+the traversal both exist; the wiring between them is next), Comtrade country
+edges (blocked on the free key), DailyMed establishments for a real `z_plant`
+cross-check, and NPPA ceiling prices for the rupee band.

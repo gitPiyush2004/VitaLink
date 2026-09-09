@@ -122,6 +122,15 @@ export const PAPER_BASELINE = {
 /** Minimum historical events before we trust a fitted rate over the paper baseline. */
 export const MIN_EVENTS_TO_FIT_RATE = 3;
 
+/**
+ * Share below which a labeler is treated as long tail.
+ *
+ * Not used to exclude anyone — HHI already discounts them. It is reported so a
+ * reader can see how much of the raw count is relabelers holding one listing
+ * each.
+ */
+export const Z_API_TAIL_SHARE_THRESHOLD = 0.01;
+
 /** Sensitivity half-width used to turn a modelled point into a band. */
 export const MODELLED_BAND_RELATIVE_WIDTH = 0.3;
 

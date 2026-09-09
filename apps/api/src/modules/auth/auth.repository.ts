@@ -139,6 +139,36 @@ async function findOrgByEmailDomain(domain: string): Promise<OrgEntity | null> {
   }
 }
 
+/**
+ * Creates an organisation if one does not already claim the domain.
+ *
+ * Exists because the bootstrap script needs it, and the ESLint layering rule
+ * correctly refused to let that script import `OrgModel` directly. Adding the
+ * method here rather than relaxing the rule is the point of having the rule.
+ */
+async function upsertOrgByDomain(input: { name: string; emailDomain: string }): Promise<OrgEntity> {
+  try {
+    const row = await OrgModel.findOneAndUpdate(
+      { email_domains: input.emailDomain.toLowerCase() },
+      {
+        $setOnInsert: {
+          name: input.name,
+          email_domains: [input.emailDomain.toLowerCase()],
+          is_active: true,
+        },
+      },
+      { upsert: true, new: true },
+    )
+      .lean<LeanOrg>()
+      .exec();
+
+    if (row === null) throw new Error('org upsert returned no document');
+    return toOrgEntity(row);
+  } catch (error) {
+    throw new DatabaseError('upsertOrgByDomain', error);
+  }
+}
+
 async function findOrgById(id: string): Promise<OrgEntity | null> {
   if (!Types.ObjectId.isValid(id)) return null;
   try {
@@ -164,6 +194,7 @@ export type AuthRepository = {
   recordLogin(userId: string, at: Date): Promise<void>;
   findOrgByEmailDomain(domain: string): Promise<OrgEntity | null>;
   findOrgById(id: string): Promise<OrgEntity | null>;
+  upsertOrgByDomain(input: { name: string; emailDomain: string }): Promise<OrgEntity>;
 };
 
 export function createAuthRepository(): AuthRepository {
@@ -175,5 +206,6 @@ export function createAuthRepository(): AuthRepository {
     recordLogin,
     findOrgByEmailDomain,
     findOrgById,
+    upsertOrgByDomain,
   };
 }

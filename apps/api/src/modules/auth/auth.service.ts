@@ -147,6 +147,23 @@ export class AuthService {
     await this.tokens.denyJti(jti, tokenExp);
   }
 
+  /**
+   * Creates an organisation for an email domain if none exists.
+   *
+   * Used by the bootstrap script. It lives here rather than in the script
+   * because the layering rule forbids anything outside a repository from
+   * importing a Mongoose model — and the rule was right to.
+   */
+  async ensureOrg(name: string, email: string): Promise<{ id: string; name: string }> {
+    const domain = emailDomain(email);
+    if (domain === null) {
+      throw new ValidationError('Email address is malformed.');
+    }
+
+    const org = await this.repository.upsertOrgByDomain({ name, emailDomain: domain });
+    return { id: org.id, name: org.name };
+  }
+
   async getPublicUser(userId: string): Promise<PublicUser> {
     const user = await this.repository.findUserById(userId);
     if (user === null) {

@@ -1,0 +1,104 @@
+# The drug universe, as QUERIES rather than as a list.
+#
+# This is spec PART 5's "critical design detail" made concrete. The obvious thing
+# to put in this file is a list of drug names. That would be wrong, for a reason
+# worth stating: a frozen list slowly stops matching the registry, and the
+# moment it does, every fragility figure derived from it describes a market that
+# no longer exists — while still looking perfectly current on screen.
+#
+# So the file stores the openFDA queries that DERIVE the universe. Re-running
+# ingestion re-derives it, and the universe refreshes when the registry does.
+#
+# Each entry is one openFDA `generic_name` search. The catalogue service turns
+# each into three cached requests: a product sample, a labeler count
+# aggregation for redundancy, and a label lookup for the storage section.
+
+version: 1
+
+# Why these: each is on the WHO Essential Medicines List, each has a recorded
+# openFDA shortage history to fit mu from, and between them they cover every
+# temperature band the logistics eligibility gate has to handle — which is what
+# makes them a useful demonstration set rather than an arbitrary one.
+#
+# `note` is documentation for a human reader. Nothing reads it at runtime.
+generics:
+  - generic_name: heparin sodium
+    note: >
+      The case that exposed the z_api problem. 47 openFDA labelers, repackagers
+      included, over 161 product listings. Room temperature, with a stated
+      excursion allowance to 30 C. Recorded shortage history.
+
+  - generic_name: amoxicillin
+    note: >
+      Antibiotic, WHO EML. High-volume oral solid, so the physical layer has real
+      hub-to-hospital flow. HS 2941.
+
+  - generic_name: insulin glargine
+    note: >
+      2-8 C cold chain, which exercises the temperature hard constraint in the
+      eligibility gate and the excursion term in the logistics risk sub-score.
+
+  - generic_name: cisplatin
+    note: >
+      Oncology, WHO EML, well-documented shortage history in the openFDA
+      shortages endpoint. Light-sensitive handling.
+
+  - generic_name: metformin hydrochloride
+    note: >
+      Very widely made, so it is the control case: a drug that should come out
+      LOW fragility. If it does not, the model is wrong somewhere.
+
+  - generic_name: vancomycin hydrochloride
+    note: >
+      Injectable antibiotic with a concentrated manufacturer base. The contrast
+      case against metformin.
+
+  - generic_name: methotrexate
+    note: >
+      Oncology and autoimmune, WHO EML, repeated recorded shortages. Hazardous
+      handling, which exercises the dangerous-goods constraint.
+
+  - generic_name: atropine sulfate
+    note: >
+      Emergency-use injectable with a small manufacturer base. A plausible
+      single-source candidate, which is what makes it interesting.
+
+# Ingredients whose country-dependency edges are built from UN Comtrade.
+#
+# The HS codes are the join key: an ingredient with no HS code has no observable
+# trade structure, and the graph reports that rather than inventing one.
+trade:
+  reporter_code: "699" # India, ISO 3166-1 numeric
+  flow: M # imports
+  hs_codes:
+    - code: "2941"
+      note: Antibiotics
+    - code: "2933"
+      note: Heterocyclic compounds, nitrogen hetero-atoms only
+    - code: "2934"
+      note: Nucleic acids and other heterocyclic compounds
+    - code: "2936"
+      note: Vitamins and provitamins
+    - code: "3003"
+      note: Medicaments, not in measured doses
+    - code: "3004"
+      note: Medicaments, in measured doses
+
+# Manufacturing clusters the hazard sources are sampled around.
+#
+# Coordinates are [longitude, latitude], GeoJSON order. These are the only
+# hardcoded coordinates in the system, and they are here because a cluster
+# centroid is a research-design choice, not observed data.
+hazard_watch:
+  - name: Hyderabad / Genome Valley
+    point: [78.4867, 17.385]
+    radius_km: 200
+  - name: Ahmedabad / Vatva
+    point: [72.5714, 23.0225]
+    radius_km: 200
+  - name: Mumbai / Navi Mumbai
+    point: [72.8777, 19.076]
+    radius_km: 200
+  - name: Visakhapatnam / Pharma City
+    point: [83.2185, 17.6868]
+    radius_km: 200

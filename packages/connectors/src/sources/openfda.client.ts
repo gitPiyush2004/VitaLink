@@ -36,6 +36,16 @@ import { sourceConfig } from './source-registry';
 
 const MAX_LIMIT = 1000;
 
+/**
+ * openFDA returns at most 100 `count` buckets unless a larger limit is asked
+ * for, and at most 1000 even then. Learned by running it: a metformin labeler
+ * count returned exactly 100 buckets summing to 629 listings, with a minimum
+ * bucket of 1 — a truncated tail presented with no indication that it was
+ * truncated. `countWithLimit` asks for the maximum and tells the caller whether
+ * the result hit it, so a floor is never mistaken for a total.
+ */
+const MAX_COUNT_BUCKETS = 1000;
+
 /** openFDA wraps every response the same way. */
 const metaSchema = z.object({
   disclaimer: z.string().optional(),
@@ -203,17 +213,28 @@ export class OpenFdaClient {
   }
 
   /**
-   * Runs a `count` aggregation.
+   * Runs a `count` aggregation, asking for openFDA's maximum bucket count.
    *
-   * This is how `z_api` is obtained: one request counting distinct
+   * This is how redundancy is obtained: one request counting distinct
    * `labeler_name` values for a generic name, rather than paging every product
    * and de-duplicating client-side.
+   *
+   * `wasTruncated` is the important part of the return value. openFDA silently
+   * caps the number of buckets, so without it a partial distribution would be
+   * indistinguishable from a complete one — and the derived redundancy would be
+   * a floor presented as a total.
    */
-  count(
+  async count(
     endpoint: EndpointName,
     query: OpenFdaQuery & { count: string },
-  ): Promise<Fetched<CountBucket[]>> {
-    return this.search(endpoint, query, countBucketSchema);
+  ): Promise<Fetched<CountBucket[]> & { wasTruncated: boolean }> {
+    const response = await this.search(
+      endpoint,
+      { ...query, limit: query.limit ?? MAX_COUNT_BUCKETS },
+      countBucketSchema,
+    );
+
+    return { ...response, wasTruncated: response.data.length >= MAX_COUNT_BUCKETS };
   }
 
   private async search<T>(

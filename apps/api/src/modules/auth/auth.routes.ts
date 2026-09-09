@@ -12,19 +12,16 @@
 
 import { Router } from 'express';
 
-import { createTokenService } from '@shared/auth/tokens';
 import { requireAuth } from '@shared/middleware/auth';
 import { validate } from '@shared/middleware/validate';
 
 import { createAuthController } from './auth.controller';
-import { createAuthRepository } from './auth.repository';
 import { loginRequestSchema, logoutRequestSchema, refreshRequestSchema } from './auth.schema';
-import { AuthService } from './auth.service';
+
+import { createAuthService } from './index';
 
 export function createAuthRouter(): Router {
-  const repository = createAuthRepository();
-  const service = new AuthService(repository, createTokenService());
-  const controller = createAuthController(service);
+  const controller = createAuthController(createAuthService());
 
   const router = Router();
 

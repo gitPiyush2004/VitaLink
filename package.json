@@ -35,7 +35,9 @@
     "gate:secrets": "tsx scripts/gates/gate-secrets.ts",
     "gates": "npm run gate:provenance && npm run gate:no-fixtures && npm run gate:no-http && npm run gate:no-fake-quotes && npm run gate:secrets",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run gates",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "bootstrap:org": "npm run bootstrap:org --workspace @vitalink/api --",
+    "refresh:catalog": "npm run refresh:catalog --workspace @vitalink/api --"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

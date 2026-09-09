@@ -22,7 +22,16 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: vitalink
       MONGO_INITDB_DATABASE: vitalink
     ports:
-      - "27017:27017"
+      # 27018 on the host, not 27017.
+      #
+      # A locally-installed mongod (Homebrew, for instance) binds 127.0.0.1:27017,
+      # and macOS resolves `localhost` to 127.0.0.1 before the wildcard address
+      # Docker binds to — so a container mapped to 27017 is silently shadowed and
+      # every connection lands on the local instance with the wrong credentials.
+      # Moving the host port sidesteps that without touching a developer's
+      # existing setup. The container port is unchanged, so the service-to-service
+      # URLs inside this file are unaffected.
+      - "27018:27017"
     volumes:
       - mongo-data:/data/db
       # Runs once, on an empty data directory: creates the app user and the
@@ -42,7 +51,8 @@ services:
     # Losing them would log every user out and drop scheduled ingestion jobs.
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      # 6380 on the host, for the same reason as Mongo's 27018 above.
+      - "6380:6379"
     volumes:
       - redis-data:/data
     healthcheck:

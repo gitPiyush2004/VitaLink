@@ -26,6 +26,12 @@ const orgSchema = new Schema(
      */
     carrier_preference: { type: Schema.Types.Mixed, default: {} },
     is_active: { type: Boolean, default: true },
+    /**
+     * Declared even though the `timestamps` option below fills them in, so that
+     * every field actually stored is visible in the schema.
+     */
+    created_at: { type: Date },
+    updated_at: { type: Date },
   },
   {
     collection: 'orgs',

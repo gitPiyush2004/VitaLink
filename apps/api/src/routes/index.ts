@@ -10,11 +10,13 @@
 import { Router } from 'express';
 
 import { createAuthRouter } from '@modules/auth/auth.routes';
+import { createCatalogRouter } from '@modules/catalog/catalog.routes';
 
 export function createApiRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
+  router.use('/catalog', createCatalogRouter());
 
   return router;
 }

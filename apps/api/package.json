@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "tsx watch --env-file=../../.env --clear-screen=false src/main.ts",
     "start": "tsx --env-file=../../.env src/main.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bootstrap:org": "tsx --env-file=../../.env src/scripts/create-org.ts",
+    "refresh:catalog": "tsx --env-file=../../.env src/scripts/refresh-catalog.ts"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",

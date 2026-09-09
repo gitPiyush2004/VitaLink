@@ -39,6 +39,12 @@ const userSchema = new Schema(
     oauth_subject: { type: String, default: null },
     last_login_at: { type: Date, default: null },
     is_disabled: { type: Boolean, default: false },
+    /**
+     * Declared even though the `timestamps` option below fills them in, so that
+     * every field actually stored is visible in the schema.
+     */
+    created_at: { type: Date },
+    updated_at: { type: Date },
   },
   {
     collection: 'users',
