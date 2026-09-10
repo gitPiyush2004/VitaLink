@@ -69,6 +69,14 @@ function toDrugEntity(doc: DrugDoc): DrugEntity {
     storageParseReason: doc.storage_parse_reason,
     coldChain: doc.cold_chain,
     excursionUpperC: toQuantity(doc.excursion_upper_c),
+    // `?? []` because documents written before this field existed read back
+    // undefined under `lean()` — Mongoose's schema default only applies on write.
+    // An empty list here means "no prohibition has been parsed for this drug",
+    // not "the label forbids nothing", and the two are only the same after a
+    // catalogue refresh has re-read the label. The gate treats an empty list as
+    // no extra restriction, so the failure direction is permissive; that is why
+    // `storage_parse_reason` is displayed next to the temperature on every row.
+    prohibitedTemperatureRanges: doc.prohibited_temperature_ranges ?? [],
     ceilingPriceInr: toQuantity(doc.ceiling_price_inr),
     dddMg: toQuantity(doc.ddd_mg),
     zApi: toQuantity(doc.z_api),
@@ -103,6 +111,7 @@ function fromDrugUpsert(
     storage_parse_reason: input.storageParseReason,
     cold_chain: input.coldChain,
     excursion_upper_c: fromQuantity(input.excursionUpperC),
+    prohibited_temperature_ranges: input.prohibitedTemperatureRanges,
     ceiling_price_inr: fromQuantity(input.ceilingPriceInr),
     ddd_mg: fromQuantity(input.dddMg),
     z_api: fromQuantity(input.zApi),

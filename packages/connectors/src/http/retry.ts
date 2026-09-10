@@ -16,6 +16,13 @@
  * **4xx is not retried.** A 400 or a 404 will fail identically on the second
  * attempt; retrying it only turns one wasted request into four. The exception is
  * 429, which is the server explicitly asking us to wait.
+ *
+ * **The backoff never undercuts the source's own published rate limit.** This one
+ * was found by running it: GDELT publishes one request every five seconds, and
+ * the 500ms first retry meant a 429 was answered by another request 500ms later,
+ * which 429'd, then 1s, then 2s — four requests in 3.5 seconds against a
+ * five-second limit, all four guaranteed to fail. The backoff schedule now starts
+ * at the source's own interval when one is known. See `floorMs` below.
  */
 
 import type { ConnectorLogger, Sleeper } from './ports';
@@ -34,9 +41,16 @@ export function isRetryableStatus(status: number): boolean {
   return status === HTTP_TOO_MANY_REQUESTS || status >= HTTP_SERVER_ERROR_FLOOR;
 }
 
-/** 500ms, 1s, 2s, 4s ... capped. Deterministic, so a test can assert the schedule. */
-export function backoffDelayMs(attempt: number): number {
-  return Math.min(BASE_DELAY_MS * BACKOFF_FACTOR ** (attempt - 1), MAX_DELAY_MS);
+/**
+ * 500ms, 1s, 2s, 4s ... capped. Deterministic, so a test can assert the schedule.
+ *
+ * @param floorMs the source's own published minimum interval, when it has one.
+ *   The schedule starts here instead of at 500ms, because a retry sooner than
+ *   the server's stated limit is a request you have already been told will fail.
+ */
+export function backoffDelayMs(attempt: number, floorMs = 0): number {
+  const base = Math.max(BASE_DELAY_MS, floorMs);
+  return Math.min(base * BACKOFF_FACTOR ** (attempt - 1), MAX_DELAY_MS);
 }
 
 /**
@@ -44,26 +58,31 @@ export function backoffDelayMs(attempt: number): number {
  * better than our schedule does. Accepts both the seconds and the HTTP-date
  * forms, and falls back to our own backoff if the header is unparseable.
  */
-export function retryAfterMs(headerValue: string | null, attempt: number): number {
-  if (headerValue === null) return backoffDelayMs(attempt);
+export function retryAfterMs(headerValue: string | null, attempt: number, floorMs = 0): number {
+  if (headerValue === null) return backoffDelayMs(attempt, floorMs);
 
   const seconds = Number(headerValue);
   if (Number.isFinite(seconds) && seconds >= 0) {
-    return Math.min(seconds * MS_PER_SECOND, MAX_DELAY_MS);
+    // Still floored: a server that sends `Retry-After: 0` while publishing a
+    // five-second limit is contradicting itself, and the limit is the safer
+    // reading of the two.
+    return Math.min(Math.max(seconds * MS_PER_SECOND, floorMs), MAX_DELAY_MS);
   }
 
   const dateMs = Date.parse(headerValue);
   if (!Number.isNaN(dateMs)) {
-    return Math.min(Math.max(dateMs - Date.now(), 0), MAX_DELAY_MS);
+    return Math.min(Math.max(dateMs - Date.now(), floorMs), MAX_DELAY_MS);
   }
 
-  return backoffDelayMs(attempt);
+  return backoffDelayMs(attempt, floorMs);
 }
 
 export type RetryContext = {
   sleeper: Sleeper;
   logger: ConnectorLogger;
   maxAttempts: number;
+  /** The source's published minimum interval. The backoff never goes below it. */
+  minIntervalMs?: number;
 };
 
 /**
@@ -80,10 +99,11 @@ export async function waitBeforeRetry(
 ): Promise<boolean> {
   if (attempt >= context.maxAttempts) return false;
 
+  const floorMs = context.minIntervalMs ?? 0;
   const delayMs =
     reason.retryAfter === undefined
-      ? backoffDelayMs(attempt)
-      : retryAfterMs(reason.retryAfter, attempt);
+      ? backoffDelayMs(attempt, floorMs)
+      : retryAfterMs(reason.retryAfter, attempt, floorMs);
 
   context.logger.warn(
     { source: reason.sourceId, attempt, delayMs, detail: reason.detail },

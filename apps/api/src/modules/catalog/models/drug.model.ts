@@ -36,6 +36,7 @@ export type DrugDoc = TimestampDoc & {
   who_eml: boolean;
   nlem_critical: boolean;
   temperature_requirement: TemperatureRange | null;
+  prohibited_temperature_ranges: TemperatureRange[];
   storage_text_raw: string | null;
   storage_parse_reason: string | null;
   cold_chain: boolean;
@@ -73,6 +74,7 @@ const drugSchema = new Schema<DrugDoc>(
 
     /** Parsed from the real openFDA label storage section, never user-supplied. */
     temperature_requirement: { type: String, enum: TEMPERATURE_RANGES, default: null },
+    prohibited_temperature_ranges: { type: [String], enum: TEMPERATURE_RANGES, default: [] },
     storage_text_raw: { type: String, default: null },
     /** Why the parse produced that range, or why it produced nothing. */
     storage_parse_reason: { type: String, default: null },

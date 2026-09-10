@@ -29,16 +29,31 @@ const FORBIDDEN_SPECIFIERS = [
 ];
 
 /**
- * `mock` is allowed only in the carrier adapter's own file and where it is
- * explicitly registered, because the mock adapter is a documented, env-gated
- * development affordance rather than hidden sample data.
+ * `mock` is allowed only in the adapter's own file, the package barrel that
+ * re-exports it, and where it is explicitly registered — because the mock
+ * adapter is a documented, env-gated development affordance rather than hidden
+ * sample data.
  */
 const MOCK_EXCEPTIONS = [
   'packages/connectors/src/carriers/mock-carrier.adapter.ts',
   'packages/connectors/src/carriers/carrier-registry.ts',
+  'packages/connectors/src/carriers/index.ts',
 ];
 
 const MOCK_IMPORT = /from\s+['"][^'"]*mock[^'"]*['"]/gi;
+
+/**
+ * Constructing the mock, which is what actually matters.
+ *
+ * The import check above cannot see `import { MockCarrierAdapter } from
+ * '@vitalink/connectors'` — the specifier has no "mock" in it — so a second rule
+ * looks for the construction instead. Only the composition root may do it, and
+ * only behind `env.CARRIER_MOCK_MODE`; the adapter's own constructor throws when
+ * that flag is off, and `env.ts` refuses to parse a production config with it on.
+ */
+const MOCK_CONSTRUCTION = /new\s+MockCarrierAdapter\s*\(/g;
+
+const MOCK_CONSTRUCTION_EXCEPTIONS = ['apps/api/src/shared/connectors/carriers.ts'];
 
 function isTestFile(relativePath: string): boolean {
   return (
@@ -59,6 +74,19 @@ function run(): Violation[] {
     for (const pattern of FORBIDDEN_SPECIFIERS) {
       for (const match of file.text.matchAll(pattern)) {
         violations.push(violationAt(file, match.index, `imports sample data: ${match[0].trim()}`));
+      }
+    }
+
+    if (!MOCK_CONSTRUCTION_EXCEPTIONS.includes(file.relativePath)) {
+      for (const match of file.text.matchAll(MOCK_CONSTRUCTION)) {
+        violations.push(
+          violationAt(
+            file,
+            match.index,
+            'constructs the mock carrier. Only the composition root may, and only behind ' +
+              'CARRIER_MOCK_MODE.',
+          ),
+        );
       }
     }
 

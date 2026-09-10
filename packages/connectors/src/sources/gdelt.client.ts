@@ -61,6 +61,9 @@ export type GdeltQuery = {
   excludeDomain?: string;
 };
 
+/** Measured: a 50-record query over a 30-day window took 23 seconds. */
+const GDELT_TIMEOUT_MS = 40_000;
+
 export class GdeltClient {
   constructor(private readonly http: CachedHttpClient) {}
 
@@ -76,6 +79,14 @@ export class GdeltClient {
         queryDescription: describeQuery(query),
         minIntervalMs: config.minIntervalMs,
         cacheTtlSeconds: config.cacheTtlSeconds,
+        // GDELT's TLS handshake takes ~11s from some networks, which is past
+        // undici's 10s connect ceiling — so every request failed as
+        // "unreachable" while curl on the same machine got a 200. Measured, not
+        // guessed; see CONNECT_TIMEOUT_MS in cached-client.ts.
+        slowHandshake: true,
+        // And the whole request needs longer than the 20s default: a 50-record
+        // query over 30 days took 23 seconds end to end.
+        timeoutMs: GDELT_TIMEOUT_MS,
       },
       gdeltResponseSchema,
     );

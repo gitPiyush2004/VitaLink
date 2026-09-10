@@ -29,6 +29,8 @@ export type DrugEntity = {
   storageParseReason: string | null;
   coldChain: boolean;
   excursionUpperC: Quantity | null;
+  /** Ranges the label forbids. A hard constraint on carrier selection. */
+  prohibitedTemperatureRanges: TemperatureRange[];
 
   ceilingPriceInr: Quantity | null;
   dddMg: Quantity | null;
@@ -122,6 +124,7 @@ export type DrugUpsertInput = {
   storageParseReason: string | null;
   coldChain: boolean;
   excursionUpperC: Quantity | null;
+  prohibitedTemperatureRanges: TemperatureRange[];
   ceilingPriceInr: Quantity | null;
   dddMg: Quantity | null;
   zApi: Quantity | null;

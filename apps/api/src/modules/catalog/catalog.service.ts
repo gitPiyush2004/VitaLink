@@ -50,6 +50,7 @@ type StorageOutcome = {
   text: string | null;
   reason: string;
   excursionQuantity: Quantity | null;
+  prohibitedRanges: StorageParse['prohibited'];
 };
 
 /** How many NDC products to read per generic name when resolving ingredients. */
@@ -225,6 +226,9 @@ export class CatalogService {
         text: null,
         reason: 'openFDA label lookup failed.',
         excursionQuantity: null,
+        // Empty, not "nothing is forbidden": we read no label, so we know
+        // nothing either way. The null `range` above is what blocks shipping.
+        prohibitedRanges: [],
       };
     }
   }
@@ -263,6 +267,7 @@ export class CatalogService {
               unit: 'C',
               source: provenanceToSource(provenance),
             }),
+      prohibitedRanges: parse.prohibited,
     };
   }
 

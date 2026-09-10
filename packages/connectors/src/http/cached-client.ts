@@ -22,11 +22,13 @@
 
 import { createHash } from 'node:crypto';
 
+import { fetch as undiciFetch } from 'undici';
 import type { ZodType } from 'zod';
 
 import type { Provenance } from '@vitalink/contracts';
 
-import { ConnectorError, kindForStatus } from './connector-error';
+import { classifyStatus, classifyThrow, type AttemptOutcome } from './classify';
+import { ConnectorError } from './connector-error';
 import {
   realSleeper,
   silentLogger,
@@ -37,13 +39,22 @@ import {
   type Sleeper,
 } from './ports';
 import { createRateLimiter, type RateLimiter } from './rate-limiter';
-import { DEFAULT_MAX_ATTEMPTS, isRetryableStatus, waitBeforeRetry } from './retry';
+import { DEFAULT_MAX_ATTEMPTS, waitBeforeRetry } from './retry';
+import { slowHandshakeAgent } from './slow-hosts';
 
 /** Twenty seconds. Long enough for a slow government PDF host, short enough that
  *  a hung request cannot occupy an ingestion worker indefinitely. */
 const DEFAULT_TIMEOUT_MS = 20_000;
+
 /** Long enough to identify a cache entry, short enough to keep Redis keys tidy. */
 const CACHE_KEY_HASH_LENGTH = 32;
+
+export type CachedHttpClientDeps = {
+  cache: ResponseCache;
+  clock?: Clock;
+  sleeper?: Sleeper;
+  logger?: ConnectorLogger;
+};
 
 /** What a caller must tell the client. Everything else comes from the registry. */
 export type SourceRequest = {
@@ -58,6 +69,14 @@ export type SourceRequest = {
   cacheTtlSeconds: number;
   headers?: Record<string, string>;
   timeoutMs?: number;
+  /**
+   * Raise the connect timeout for a host with a slow TLS handshake.
+   *
+   * Only set it where a measurement justifies it — see `http/slow-hosts.ts`.
+   * A long connect timeout on a genuinely dead host means a worker waits that
+   * long to learn nothing.
+   */
+  slowHandshake?: boolean;
   /** Overrides the default retry budget; carrier adapters use a smaller one. */
   maxAttempts?: number;
 };
@@ -77,13 +96,12 @@ export type Fetched<T> = {
   rawBody: string;
 };
 
-export type CachedHttpClientDeps = {
-  cache: ResponseCache;
-  clock?: Clock;
-  sleeper?: Sleeper;
-  logger?: ConnectorLogger;
-};
-
+/**
+ * A non-OK response, split into retryable and fatal.
+ *
+ * The distinction matters more than it looks: a 404 retried four times is four
+ * requests against someone else's rate limit for an answer that will not change.
+ */
 export class CachedHttpClient {
   private readonly cache: ResponseCache;
   private readonly clock: Clock;
@@ -169,6 +187,71 @@ export class CachedHttpClient {
     return { data: rawBody, provenance, fromCache: false, rawBody };
   }
 
+  /**
+   * POSTs a form body and validates the JSON response.
+   *
+   * **Never cached, regardless of the request's TTL.** This exists for OAuth
+   * token exchanges, and caching a bearer token would put a live credential into
+   * a shared Redis instance for no benefit — the adapters already cache tokens in
+   * process memory, where they belong.
+   *
+   * It still goes through the rate limiter and the retry policy, because a token
+   * endpoint is as rate-limited as any other and a 503 there should back off
+   * rather than fail the whole quote fan-out.
+   */
+  async postForm<T>(
+    request: SourceRequest,
+    body: URLSearchParams,
+    schema: ZodType<T>,
+  ): Promise<Fetched<T>> {
+    const maxAttempts = request.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+    const retryContext = {
+      sleeper: this.sleeper,
+      logger: this.logger,
+      maxAttempts,
+      // The source's own published limit floors the backoff: retrying sooner
+      // than the server said is a request already known to fail.
+      minIntervalMs: request.minIntervalMs,
+    };
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await this.limiter.acquire(request.sourceId, request.minIntervalMs);
+
+      const outcome = await this.attemptOnce(request, {
+        method: 'POST',
+        body,
+        contentType: 'application/x-www-form-urlencoded',
+      });
+
+      if (outcome.kind === 'ok') {
+        const provenance = this.buildProvenance(request);
+        return {
+          data: validate(schema, outcome.body, request),
+          provenance,
+          fromCache: false,
+          rawBody: outcome.body,
+        };
+      }
+
+      if (outcome.kind === 'fatal') throw outcome.error;
+
+      const shouldRetry = await waitBeforeRetry(retryContext, attempt, {
+        sourceId: request.sourceId,
+        detail: outcome.detail,
+        retryAfter: outcome.retryAfter,
+      });
+
+      if (!shouldRetry) throw outcome.error;
+    }
+
+    throw new ConnectorError({
+      kind: 'upstream_error',
+      sourceId: request.sourceId,
+      message: 'retry loop exhausted without a verdict',
+      url: request.url,
+    });
+  }
+
   private buildProvenance(request: SourceRequest): Provenance {
     return {
       source_name: request.displayName,
@@ -181,7 +264,14 @@ export class CachedHttpClient {
   /** The retry loop. Separated so `getJson` reads as five steps rather than fifty lines. */
   private async fetchWithRetries(request: SourceRequest): Promise<string> {
     const maxAttempts = request.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
-    const retryContext = { sleeper: this.sleeper, logger: this.logger, maxAttempts };
+    const retryContext = {
+      sleeper: this.sleeper,
+      logger: this.logger,
+      maxAttempts,
+      // The source's own published limit floors the backoff: retrying sooner
+      // than the server said is a request already known to fail.
+      minIntervalMs: request.minIntervalMs,
+    };
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       await this.limiter.acquire(request.sourceId, request.minIntervalMs);
@@ -214,68 +304,50 @@ export class CachedHttpClient {
     });
   }
 
-  private async attemptOnce(request: SourceRequest): Promise<AttemptOutcome> {
+  /** One HTTP attempt. `body` is present only for the form POST path. */
+  private async attemptOnce(
+    request: SourceRequest,
+    post?: { method: 'POST'; body: URLSearchParams; contentType: string },
+  ): Promise<AttemptOutcome> {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
     }, request.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     try {
-      const response = await fetch(request.url, {
-        method: 'GET',
-        headers: { accept: 'application/json', ...request.headers },
+      const init = {
+        method: post === undefined ? 'GET' : post.method,
+        headers: {
+          accept: 'application/json',
+          ...(post === undefined ? {} : { 'content-type': post.contentType }),
+          ...request.headers,
+        },
+        ...(post === undefined ? {} : { body: post.body.toString() }),
         signal: controller.signal,
-      });
+      };
+
+      // Two fetch implementations, and the branch is not gratuitous. Node's
+      // global `fetch` validates that a `dispatcher` is one of *its own*
+      // internal undici classes and rejects the npm package's Agent with
+      // UND_ERR_INVALID_ARG — so raising the connect timeout means calling the
+      // npm undici's own `fetch`, which accepts its own Agent. Everything else
+      // keeps using the global, so the ordinary path has no new dependency in it.
+      const response =
+        request.slowHandshake === true
+          ? await undiciFetch(request.url, { ...init, dispatcher: slowHandshakeAgent() })
+          : await fetch(request.url, init);
 
       const body = await response.text();
 
       if (response.ok) return { kind: 'ok', body };
-
-      const error = new ConnectorError({
-        kind: kindForStatus(response.status),
-        sourceId: request.sourceId,
-        message: `${request.displayName} returned ${String(response.status)}`,
-        httpStatus: response.status,
-        url: request.url,
-      });
-
-      return isRetryableStatus(response.status)
-        ? {
-            kind: 'retryable_status',
-            error,
-            detail: `HTTP ${String(response.status)}`,
-            retryAfter: response.headers.get('retry-after'),
-          }
-        : { kind: 'fatal', error, detail: `HTTP ${String(response.status)}` };
+      return classifyStatus(request, response);
     } catch (cause) {
-      // An aborted fetch and a DNS failure are different problems: the first is
-      // "too slow", the second is "unreachable", and a carrier adapter reports
-      // them with different `unavailable_reason` values.
-      const isAbort = cause instanceof Error && cause.name === 'AbortError';
-      return {
-        kind: 'retryable_status',
-        error: new ConnectorError({
-          kind: isAbort ? 'timeout' : 'network',
-          sourceId: request.sourceId,
-          message: isAbort
-            ? `${request.displayName} timed out`
-            : `${request.displayName} was unreachable`,
-          url: request.url,
-          cause,
-        }),
-        detail: isAbort ? 'timeout' : 'network error',
-        retryAfter: null,
-      };
+      return classifyThrow(request, cause);
     } finally {
       clearTimeout(timeout);
     }
   }
 }
-
-type AttemptOutcome =
-  | { kind: 'ok'; body: string }
-  | { kind: 'retryable_status'; error: ConnectorError; detail: string; retryAfter: string | null }
-  | { kind: 'fatal'; error: ConnectorError; detail: string };
 
 /**
  * The cache key is a hash of the source and the full URL.

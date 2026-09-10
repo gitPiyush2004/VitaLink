@@ -1,0 +1,1807 @@
+/*
+ * The design system: tokens, base rules, and one class per primitive.
+ *
+ * ## Why a stylesheet now, when the primitives used to be inline styles
+ *
+ * The old note in `layout.tsx` argued that a stylesheet meant looking in two
+ * places to answer "why is this grey". That held while every rule was a static
+ * declaration. It stopped holding the moment the UI needed states: `:hover`,
+ * `:focus-visible`, `::placeholder`, `@media`, `prefers-reduced-motion`, sticky
+ * table headers and keyframes. None of those can be expressed as a style object
+ * at all, and the workarounds — mouse-enter handlers holding hover in React
+ * state — are worse than the indirection they avoid.
+ *
+ * So: tokens and interaction live here, and the components keep their structure
+ * in TSX. `<QuantityValue>` is still the only way to render a number, which is
+ * the invariant that actually mattered.
+ *
+ * ## Reading the tokens
+ *
+ * Surfaces step 0 -> 3 from the page backdrop up to the raised chrome inside a
+ * panel. The four provenance colours are semantic and must stay mutually
+ * distinguishable at a glance, including for the most common colour-vision
+ * deficiency, which is why they are spread across hue AND lightness rather than
+ * being four hues at one lightness. The accent is teal specifically so it does
+ * not collide with DERIVED's blue: an interactive control and a provenance tag
+ * must never be confusable.
+ */
+
+:root {
+  /* Surfaces, dark to light. */
+  --vl-bg-0: #070a0f;
+  --vl-bg-1: #0b0f16;
+  --vl-bg-2: #10161f;
+  --vl-bg-3: #161e2a;
+  --vl-bg-4: #1c2634;
+
+  /* Hairlines. `line-2` is for a border that has to be seen, not felt. */
+  --vl-line: #1b2331;
+  --vl-line-strong: #2b3749;
+
+  /* Ink, most to least prominent. All three clear AA on --vl-bg-2. */
+  --vl-ink: #eaf0f7;
+  --vl-ink-2: #b9c5d4;
+  --vl-ink-3: #8494a8;
+
+  /* The accent. Teal, so it cannot be mistaken for the DERIVED tag. */
+  --vl-accent: #2dd4bf;
+  --vl-accent-strong: #14b8a6;
+  --vl-accent-ink: #04211d;
+  --vl-accent-soft: rgb(45 212 191 / 12%);
+  --vl-accent-line: rgb(45 212 191 / 32%);
+
+  /* Provenance and status semantics. */
+  --vl-real: #34d399;
+  --vl-real-soft: rgb(52 211 153 / 12%);
+  --vl-real-line: rgb(52 211 153 / 28%);
+
+  --vl-derived: #60a5fa;
+  --vl-derived-soft: rgb(96 165 250 / 12%);
+  --vl-derived-line: rgb(96 165 250 / 28%);
+
+  --vl-modelled: #fbbf24;
+  --vl-modelled-soft: rgb(251 191 36 / 12%);
+  --vl-modelled-line: rgb(251 191 36 / 28%);
+
+  --vl-scenario: #c084fc;
+  --vl-scenario-soft: rgb(192 132 252 / 12%);
+  --vl-scenario-line: rgb(192 132 252 / 28%);
+
+  --vl-danger: #fb7185;
+  --vl-danger-soft: rgb(251 113 133 / 12%);
+  --vl-danger-line: rgb(251 113 133 / 30%);
+
+  /* Type. */
+  --vl-font:
+    -apple-system, blinkmacsystemfont, 'Segoe UI', inter, roboto, helvetica, arial, sans-serif;
+  --vl-mono: ui-monospace, sfmono-regular, 'JetBrains Mono', menlo, consolas, monospace;
+
+  --vl-fs-2xs: 0.6875rem; /* 11px — chips, table heads */
+  --vl-fs-xs: 0.75rem; /* 12px — captions */
+  --vl-fs-sm: 0.8125rem; /* 13px — table body */
+  --vl-fs-md: 0.875rem; /* 14px — prose */
+  --vl-fs-lg: 1rem; /* 16px — panel titles */
+  --vl-fs-xl: 1.375rem; /* 22px — page title */
+  --vl-fs-2xl: 1.875rem; /* 30px — stat values */
+
+  /* Space, radius, elevation. */
+  --vl-r-sm: 6px;
+  --vl-r-md: 10px;
+  --vl-r-lg: 14px;
+  --vl-r-full: 999px;
+
+  --vl-shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --vl-shadow-2: 0 8px 24px -12px rgb(0 0 0 / 70%);
+  --vl-shadow-3: 0 24px 60px -20px rgb(0 0 0 / 80%);
+
+  --vl-sidebar-w: 244px;
+  --vl-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--vl-bg-0);
+  color: var(--vl-ink-2);
+  font-family: var(--vl-font);
+  font-size: var(--vl-fs-md);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
+}
+
+/* Every number in this UI is meant to be compared down a column. */
+.vl-num,
+td,
+th,
+.vl-stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+code,
+pre,
+.vl-mono {
+  font-family: var(--vl-mono);
+  font-size: 0.92em;
+}
+
+a {
+  color: var(--vl-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--vl-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection {
+  background: var(--vl-accent-line);
+  color: var(--vl-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vl-line-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--vl-r-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4759;
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Shell: sidebar, topbar, content
+ * ------------------------------------------------------------------------ */
+
+.vl-app {
+  display: grid;
+  grid-template-columns: var(--vl-sidebar-w) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.vl-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 12px;
+  background: linear-gradient(180deg, #0c111a, #080b11);
+  border-right: 1px solid var(--vl-line);
+}
+
+.vl-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 16px;
+}
+
+.vl-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--vl-r-md);
+  background: linear-gradient(145deg, var(--vl-accent), #0e9488);
+  color: var(--vl-accent-ink);
+  box-shadow:
+    0 0 0 1px rgb(45 212 191 / 25%),
+    0 6px 18px -8px rgb(45 212 191 / 60%);
+}
+
+.vl-brand-name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--vl-ink);
+  line-height: 1.2;
+}
+
+.vl-brand-sub {
+  margin: 0;
+  font-size: var(--vl-fs-2xs);
+  color: var(--vl-ink-3);
+  line-height: 1.3;
+}
+
+.vl-nav-heading {
+  padding: 12px 10px 6px;
+  font-size: var(--vl-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #5f6e82;
+}
+
+.vl-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--vl-r-md);
+  background: transparent;
+  color: var(--vl-ink-3);
+  font: inherit;
+  font-size: var(--vl-fs-sm);
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--vl-ease),
+    color 0.15s var(--vl-ease);
+}
+
+.vl-nav-item:hover {
+  background: rgb(255 255 255 / 4%);
+  color: var(--vl-ink-2);
+}
+
+.vl-nav-item[aria-current='page'] {
+  background: var(--vl-accent-soft);
+  border-color: var(--vl-accent-line);
+  color: var(--vl-ink);
+}
+
+.vl-nav-step {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 5px;
+  flex: none;
+  border-radius: var(--vl-r-sm);
+  background: var(--vl-bg-3);
+  color: var(--vl-ink-3);
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vl-nav-item[aria-current='page'] .vl-nav-step {
+  background: var(--vl-accent);
+  color: var(--vl-accent-ink);
+}
+
+.vl-nav-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vl-nav-count {
+  font-size: var(--vl-fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: #5f6e82;
+}
+
+.vl-sidebar-foot {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--vl-line);
+  display: grid;
+  gap: 8px;
+}
+
+.vl-org {
+  padding: 0 10px;
+  font-size: var(--vl-fs-2xs);
+  color: var(--vl-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vl-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vl-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 28px;
+  background: rgb(7 10 15 / 82%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--vl-line);
+}
+
+.vl-topbar h1 {
+  margin: 0;
+  font-size: var(--vl-fs-xl);
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  color: var(--vl-ink);
+  line-height: 1.15;
+}
+
+.vl-topbar p {
+  margin: 2px 0 0;
+  font-size: var(--vl-fs-sm);
+  color: var(--vl-ink-3);
+  max-width: 76ch;
+}
+
+.vl-topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vl-content {
+  padding: 24px 28px 64px;
+  max-width: 1480px;
+  width: 100%;
+}
+
+/* Below the sidebar's useful width, it becomes a scrolling strip on top. */
+@media (width <= 900px) {
+  .vl-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vl-sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 14px;
+    border-right: none;
+    border-bottom: 1px solid var(--vl-line);
+  }
+
+  .vl-brand,
+  .vl-nav-heading,
+  .vl-nav-count,
+  .vl-org {
+    display: none;
+  }
+
+  .vl-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .vl-sidebar-foot {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: none;
+    grid-auto-flow: column;
+  }
+
+  .vl-topbar,
+  .vl-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Panel
+ * ------------------------------------------------------------------------ */
+
+.vl-panel {
+  background: linear-gradient(180deg, var(--vl-bg-2), #0d131c);
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-lg);
+  box-shadow: var(--vl-shadow-2);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.vl-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--vl-line);
+}
+
+.vl-panel-head--bare {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.vl-panel-eyebrow {
+  margin: 0 0 3px;
+  font-size: var(--vl-fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vl-accent);
+}
+
+.vl-panel-title {
+  margin: 0;
+  font-size: var(--vl-fs-lg);
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--vl-ink);
+  line-height: 1.3;
+}
+
+.vl-panel-sub {
+  margin: 5px 0 0;
+  font-size: var(--vl-fs-sm);
+  line-height: 1.6;
+  color: var(--vl-ink-3);
+  max-width: 88ch;
+}
+
+.vl-panel-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vl-panel-body {
+  padding: 16px 18px 18px;
+}
+
+.vl-panel-body--flush {
+  padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * Stat cards
+ * ------------------------------------------------------------------------ */
+
+.vl-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.vl-stat {
+  position: relative;
+  padding: 14px 16px 14px 18px;
+  background: linear-gradient(180deg, var(--vl-bg-2), #0d131c);
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-md);
+  box-shadow: var(--vl-shadow-1);
+  overflow: hidden;
+}
+
+.vl-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--vl-tone, var(--vl-line-strong));
+}
+
+.vl-stat-label {
+  margin: 0;
+  font-size: var(--vl-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vl-ink-3);
+}
+
+.vl-stat-value {
+  margin: 6px 0 0;
+  font-size: var(--vl-fs-2xl);
+  font-weight: 620;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--vl-ink);
+}
+
+.vl-stat-value--muted {
+  font-size: var(--vl-fs-lg);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--vl-ink-3);
+  letter-spacing: 0;
+}
+
+.vl-stat-note {
+  margin: 6px 0 0;
+  font-size: var(--vl-fs-xs);
+  line-height: 1.5;
+  color: var(--vl-ink-3);
+}
+
+/* --------------------------------------------------------------------------
+ * Table
+ * ------------------------------------------------------------------------ */
+
+.vl-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--vl-r-md);
+  border: 1px solid var(--vl-line);
+}
+
+.vl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--vl-fs-sm);
+}
+
+.vl-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 12px;
+  background: var(--vl-bg-3);
+  border-bottom: 1px solid var(--vl-line-strong);
+  color: var(--vl-ink-3);
+  font-size: var(--vl-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.vl-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vl-line);
+  color: var(--vl-ink-2);
+  vertical-align: top;
+}
+
+.vl-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.vl-table tbody tr {
+  transition: background 0.12s var(--vl-ease);
+}
+
+.vl-table tbody tr:hover {
+  background: rgb(255 255 255 / 2.5%);
+}
+
+.vl-table tbody tr.is-highlighted {
+  background: var(--vl-accent-soft);
+  box-shadow: inset 3px 0 0 var(--vl-accent);
+}
+
+.vl-table tbody tr.is-highlighted:hover {
+  background: rgb(45 212 191 / 16%);
+}
+
+.vl-table tbody tr.is-total td {
+  background: var(--vl-bg-3);
+  border-top: 1px solid var(--vl-line-strong);
+  color: var(--vl-ink);
+  font-weight: 600;
+}
+
+.vl-cell-strong {
+  display: block;
+  color: var(--vl-ink);
+  font-weight: 550;
+}
+
+.vl-cell-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--vl-fs-xs);
+  line-height: 1.45;
+  color: var(--vl-ink-3);
+}
+
+/* --------------------------------------------------------------------------
+ * Buttons and form controls
+ * ------------------------------------------------------------------------ */
+
+.vl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--vl-line-strong);
+  border-radius: var(--vl-r-md);
+  background: var(--vl-bg-3);
+  color: var(--vl-ink-2);
+  font: inherit;
+  font-size: var(--vl-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--vl-ease),
+    border-color 0.15s var(--vl-ease),
+    transform 0.08s var(--vl-ease);
+}
+
+.vl-btn:hover:not(:disabled) {
+  background: var(--vl-bg-4);
+  border-color: #384656;
+  color: var(--vl-ink);
+}
+
+.vl-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.vl-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.vl-btn--primary {
+  background: linear-gradient(180deg, var(--vl-accent), var(--vl-accent-strong));
+  border-color: transparent;
+  color: var(--vl-accent-ink);
+  box-shadow: 0 6px 16px -10px rgb(45 212 191 / 90%);
+}
+
+.vl-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4de0cd, var(--vl-accent));
+  border-color: transparent;
+  color: var(--vl-accent-ink);
+}
+
+.vl-btn--sm {
+  padding: 5px 10px;
+  font-size: var(--vl-fs-xs);
+  border-radius: var(--vl-r-sm);
+}
+
+/* A row of mutually exclusive choices — cascade runs, saved recommendations. */
+.vl-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vl-pill {
+  padding: 5px 11px;
+  border: 1px solid var(--vl-line-strong);
+  border-radius: var(--vl-r-full);
+  background: transparent;
+  color: var(--vl-ink-3);
+  font: inherit;
+  font-size: var(--vl-fs-xs);
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--vl-ease),
+    color 0.15s var(--vl-ease);
+}
+
+.vl-pill:hover {
+  background: rgb(255 255 255 / 4%);
+  color: var(--vl-ink-2);
+}
+
+.vl-pill[aria-pressed='true'] {
+  background: var(--vl-accent-soft);
+  border-color: var(--vl-accent-line);
+  color: var(--vl-accent);
+}
+
+.vl-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.vl-label {
+  font-size: var(--vl-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vl-ink-3);
+}
+
+.vl-input,
+.vl-select {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--vl-line-strong);
+  border-radius: var(--vl-r-md);
+  background: var(--vl-bg-0);
+  color: var(--vl-ink);
+  font: inherit;
+  font-size: var(--vl-fs-sm);
+  transition:
+    border-color 0.15s var(--vl-ease),
+    box-shadow 0.15s var(--vl-ease);
+}
+
+.vl-input::placeholder {
+  color: #566274;
+}
+
+.vl-input:focus,
+.vl-select:focus {
+  outline: none;
+  border-color: var(--vl-accent-line);
+  box-shadow: 0 0 0 3px var(--vl-accent-soft);
+}
+
+.vl-select {
+  cursor: pointer;
+  padding-right: 28px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--vl-ink-3) 50%),
+    linear-gradient(135deg, var(--vl-ink-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.vl-toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+/* --------------------------------------------------------------------------
+ * Chips
+ * ------------------------------------------------------------------------ */
+
+.vl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid var(--vl-chip-line, var(--vl-line-strong));
+  border-radius: var(--vl-r-full);
+  background: var(--vl-chip-soft, var(--vl-bg-3));
+  color: var(--vl-chip-ink, var(--vl-ink-3));
+  font-size: var(--vl-fs-2xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.vl-chip--real {
+  --vl-chip-ink: var(--vl-real);
+  --vl-chip-soft: var(--vl-real-soft);
+  --vl-chip-line: var(--vl-real-line);
+}
+
+.vl-chip--derived {
+  --vl-chip-ink: var(--vl-derived);
+  --vl-chip-soft: var(--vl-derived-soft);
+  --vl-chip-line: var(--vl-derived-line);
+}
+
+.vl-chip--modelled {
+  --vl-chip-ink: var(--vl-modelled);
+  --vl-chip-soft: var(--vl-modelled-soft);
+  --vl-chip-line: var(--vl-modelled-line);
+}
+
+.vl-chip--scenario {
+  --vl-chip-ink: var(--vl-scenario);
+  --vl-chip-soft: var(--vl-scenario-soft);
+  --vl-chip-line: var(--vl-scenario-line);
+}
+
+.vl-chip--danger {
+  --vl-chip-ink: var(--vl-danger);
+  --vl-chip-soft: var(--vl-danger-soft);
+  --vl-chip-line: var(--vl-danger-line);
+}
+
+.vl-chip--neutral {
+  --vl-chip-ink: var(--vl-ink-3);
+}
+
+.vl-tag {
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+/* --------------------------------------------------------------------------
+ * Value rendering
+ * ------------------------------------------------------------------------ */
+
+.vl-value {
+  cursor: help;
+  white-space: nowrap;
+  color: var(--vl-ink);
+  font-weight: 550;
+}
+
+.vl-unavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--vl-ink-3);
+  font-size: var(--vl-fs-sm);
+  font-style: italic;
+  cursor: help;
+  border-bottom: 1px dashed #3c4859;
+}
+
+.vl-unavailable::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4c5a6d;
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+ * Notes, empty states, calculation methods
+ * ------------------------------------------------------------------------ */
+
+.vl-note {
+  display: grid;
+  gap: 4px;
+  padding: 11px 14px;
+  border: 1px solid var(--vl-note-line, var(--vl-line));
+  border-left: 3px solid var(--vl-note-ink, var(--vl-ink-3));
+  border-radius: var(--vl-r-sm);
+  background: var(--vl-note-soft, rgb(255 255 255 / 2.5%));
+  font-size: var(--vl-fs-sm);
+  line-height: 1.65;
+  color: var(--vl-ink-2);
+}
+
+.vl-note + .vl-note {
+  margin-top: 10px;
+}
+
+.vl-note-title {
+  font-weight: 650;
+  color: var(--vl-note-ink, var(--vl-ink));
+  font-size: var(--vl-fs-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vl-note--warn {
+  --vl-note-ink: var(--vl-modelled);
+  --vl-note-soft: var(--vl-modelled-soft);
+  --vl-note-line: var(--vl-modelled-line);
+}
+
+.vl-note--danger {
+  --vl-note-ink: var(--vl-danger);
+  --vl-note-soft: var(--vl-danger-soft);
+  --vl-note-line: var(--vl-danger-line);
+}
+
+.vl-note--accent {
+  --vl-note-ink: var(--vl-accent);
+  --vl-note-soft: var(--vl-accent-soft);
+  --vl-note-line: var(--vl-accent-line);
+}
+
+.vl-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  padding: 28px 24px;
+  border: 1px dashed var(--vl-line-strong);
+  border-radius: var(--vl-r-md);
+  color: var(--vl-ink-3);
+  font-size: var(--vl-fs-sm);
+  line-height: 1.65;
+}
+
+.vl-empty p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.vl-empty-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--vl-line-strong);
+  color: var(--vl-ink-3);
+}
+
+.vl-method {
+  margin: 10px 0 0;
+  padding: 11px 13px;
+  background: var(--vl-bg-0);
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-sm);
+  color: var(--vl-ink-3);
+  font-family: var(--vl-mono);
+  font-size: var(--vl-fs-xs);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.vl-disclosure {
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-md);
+  background: rgb(255 255 255 / 1.5%);
+  margin-top: 12px;
+}
+
+.vl-disclosure > summary {
+  padding: 9px 14px;
+  cursor: pointer;
+  color: var(--vl-ink-3);
+  font-size: var(--vl-fs-sm);
+  font-weight: 550;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vl-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.vl-disclosure > summary::before {
+  content: '▸';
+  font-size: 0.7em;
+  transition: transform 0.15s var(--vl-ease);
+}
+
+.vl-disclosure[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.vl-disclosure > summary:hover {
+  color: var(--vl-ink-2);
+}
+
+.vl-disclosure-body {
+  padding: 0 14px 14px;
+  font-size: var(--vl-fs-sm);
+  line-height: 1.7;
+  color: var(--vl-ink-2);
+}
+
+.vl-disclosure-body > :first-child {
+  margin-top: 0;
+}
+
+.vl-disclosure-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * Meters and charts
+ * ------------------------------------------------------------------------ */
+
+.vl-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+}
+
+.vl-meter-label {
+  font-size: var(--vl-fs-xs);
+  color: var(--vl-ink-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vl-meter-value {
+  font-size: var(--vl-fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--vl-ink);
+  font-weight: 600;
+}
+
+.vl-meter-track {
+  grid-column: 1 / -1;
+  height: 5px;
+  border-radius: var(--vl-r-full);
+  background: var(--vl-bg-4);
+  overflow: hidden;
+}
+
+.vl-meter-fill {
+  height: 100%;
+  border-radius: var(--vl-r-full);
+  background: var(--vl-tone, var(--vl-accent));
+  transition: width 0.4s var(--vl-ease);
+}
+
+.vl-meters {
+  display: grid;
+  gap: 12px;
+}
+
+.vl-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.vl-chart-grid {
+  stroke: var(--vl-line);
+  stroke-width: 1;
+}
+
+.vl-chart-axis {
+  fill: var(--vl-ink-3);
+  font-size: 10px;
+  font-family: var(--vl-font);
+}
+
+.vl-chart-caption {
+  margin: 8px 0 0;
+  font-size: var(--vl-fs-xs);
+  color: var(--vl-ink-3);
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+ * The loop diagram on the overview
+ * ------------------------------------------------------------------------ */
+
+.vl-loop {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+}
+
+.vl-loop-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 116px;
+  padding: 12px 12px 13px;
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-md);
+  background: var(--vl-bg-1);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--vl-ease),
+    background 0.15s var(--vl-ease),
+    transform 0.15s var(--vl-ease);
+}
+
+.vl-loop-stage:hover {
+  transform: translateY(-2px);
+  border-color: var(--vl-accent-line);
+  background: var(--vl-bg-2);
+}
+
+.vl-loop-stage:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.vl-loop-stage:disabled:hover {
+  transform: none;
+  border-color: var(--vl-line);
+  background: var(--vl-bg-1);
+}
+
+.vl-loop-stage::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  width: 8px;
+  height: 1px;
+  background: var(--vl-line-strong);
+}
+
+.vl-loop-stage:last-child::after {
+  display: none;
+}
+
+.vl-loop-num {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--vl-ink-3);
+}
+
+.vl-loop-name {
+  margin: 3px 0 0;
+  font-size: var(--vl-fs-sm);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--vl-ink);
+}
+
+.vl-loop-fact {
+  margin: 5px 0 0;
+  font-size: var(--vl-fs-xs);
+  color: var(--vl-ink-3);
+  line-height: 1.4;
+}
+
+.vl-loop-stage[data-state='done'] .vl-loop-num {
+  color: var(--vl-accent);
+}
+
+.vl-loop-stage[data-state='absent'] {
+  border-style: dashed;
+}
+
+/* --------------------------------------------------------------------------
+ * The propagation chain
+ * ------------------------------------------------------------------------ */
+
+.vl-path {
+  padding: 12px 14px;
+  border: 1px solid var(--vl-line);
+  border-radius: var(--vl-r-md);
+  background: rgb(255 255 255 / 1.5%);
+}
+
+.vl-path + .vl-path {
+  margin-top: 10px;
+}
+
+.vl-path-meta {
+  font-size: var(--vl-fs-2xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vl-ink-3);
+  margin-bottom: 8px;
+}
+
+.vl-hops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vl-hop {
+  padding: 4px 10px;
+  border: 1px solid var(--vl-line-strong);
+  border-radius: var(--vl-r-sm);
+  background: var(--vl-bg-3);
+  color: var(--vl-ink);
+  font-size: var(--vl-fs-xs);
+  font-weight: 550;
+}
+
+.vl-hop--origin {
+  border-color: var(--vl-danger-line);
+  background: var(--vl-danger-soft);
+  color: var(--vl-danger);
+}
+
+.vl-hop--target {
+  border-color: var(--vl-accent-line);
+  background: var(--vl-accent-soft);
+  color: var(--vl-accent);
+}
+
+.vl-hop-edge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.625rem;
+  font-family: var(--vl-mono);
+  color: var(--vl-ink-3);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+ * Login
+ * ------------------------------------------------------------------------ */
+
+.vl-login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  min-height: 100vh;
+}
+
+.vl-login-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  padding: 56px;
+  background:
+    radial-gradient(900px 500px at 12% 8%, rgb(45 212 191 / 11%), transparent 62%),
+    radial-gradient(700px 500px at 88% 92%, rgb(96 165 250 / 9%), transparent 60%), var(--vl-bg-0);
+  border-right: 1px solid var(--vl-line);
+}
+
+.vl-login-brand h1 {
+  margin: 0;
+  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  color: var(--vl-ink);
+  max-width: 18ch;
+}
+
+.vl-login-brand p {
+  margin: 0;
+  max-width: 54ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--vl-ink-3);
+}
+
+.vl-login-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 56ch;
+}
+
+.vl-login-facts li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  font-size: var(--vl-fs-md);
+  line-height: 1.6;
+  color: var(--vl-ink-2);
+}
+
+.vl-login-facts b {
+  color: var(--vl-ink);
+  font-weight: 600;
+}
+
+.vl-login-tick {
+  color: var(--vl-accent);
+  font-weight: 700;
+}
+
+.vl-login-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px;
+  background: var(--vl-bg-1);
+}
+
+.vl-login-form-inner {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+@media (width <= 880px) {
+  .vl-login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vl-login-brand {
+    padding: 40px 24px;
+    border-right: none;
+    border-bottom: 1px solid var(--vl-line);
+  }
+
+  .vl-login-form {
+    padding: 32px 24px 56px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Loading
+ * ------------------------------------------------------------------------ */
+
+.vl-skeleton {
+  border-radius: var(--vl-r-sm);
+  background: linear-gradient(90deg, var(--vl-bg-3), var(--vl-bg-4), var(--vl-bg-3));
+  background-size: 200% 100%;
+  animation: vl-shimmer 1.4s linear infinite;
+}
+
+@keyframes vl-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.vl-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgb(255 255 255 / 25%);
+  border-top-color: currentcolor;
+  border-radius: 50%;
+  animation: vl-spin 0.7s linear infinite;
+}
+
+@keyframes vl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Small utilities used by more than one view
+ * ------------------------------------------------------------------------ */
+
+.vl-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.vl-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.vl-muted {
+  color: var(--vl-ink-3);
+}
+
+.vl-danger {
+  color: var(--vl-danger);
+}
+
+.vl-prose {
+  font-size: var(--vl-fs-sm);
+  line-height: 1.75;
+  color: var(--vl-ink-2);
+  max-width: 92ch;
+}
+
+.vl-prose p {
+  margin: 0 0 10px;
+}
+
+.vl-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.vl-prose code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--vl-bg-3);
+  color: var(--vl-ink);
+}
+
+.vl-legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+ * Atmosphere
+ *
+ * Two very low-opacity washes behind everything, and a short rise on anything
+ * that arrives. Both are deliberately below the threshold where they read as
+ * "effects" — the job is to stop a dark page looking like a flat rectangle, not
+ * to be noticed.
+ * ------------------------------------------------------------------------ */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 620px at 82% -12%, rgb(45 212 191 / 6%), transparent 62%),
+    radial-gradient(900px 520px at -6% 104%, rgb(96 165 250 / 5%), transparent 58%);
+}
+
+.vl-app,
+.vl-login {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes vl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vl-panel,
+.vl-stats > * {
+  animation: vl-rise 0.38s var(--vl-ease) both;
+}
+
+.vl-stats > *:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.vl-stats > *:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.vl-stats > *:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.vl-stats > *:nth-child(5) {
+  animation-delay: 0.16s;
+}
+
+.vl-stats > *:nth-child(6) {
+  animation-delay: 0.2s;
+}
+
+.vl-nav-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.9;
+}
+
+/* --------------------------------------------------------------------------
+ * The screen guide
+ *
+ * Every view opens with one plain-English question and two or three plain
+ * instructions. It exists because the rest of this UI is written for someone who
+ * knows what a Pareto front is, and the person who would actually use a tool
+ * like this manages a supply chain rather than a codebase. The technical
+ * reasoning did not move out of the product — it moved one level down, into the
+ * panels and the disclosures underneath.
+ * ------------------------------------------------------------------------ */
+
+.vl-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 22px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  border: 1px solid var(--vl-accent-line);
+  border-radius: var(--vl-r-lg);
+  background:
+    linear-gradient(135deg, rgb(45 212 191 / 9%), rgb(45 212 191 / 2%) 48%, transparent 78%),
+    var(--vl-bg-2);
+  animation: vl-rise 0.38s var(--vl-ease) both;
+}
+
+.vl-guide-label {
+  margin: 0 0 6px;
+  font-size: var(--vl-fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vl-accent);
+}
+
+.vl-guide-q {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 550;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--vl-ink);
+  max-width: 46ch;
+}
+
+.vl-guide-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+  counter-reset: vl-step;
+}
+
+.vl-guide-steps li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  font-size: var(--vl-fs-sm);
+  line-height: 1.6;
+  color: var(--vl-ink-2);
+}
+
+.vl-guide-steps li::before {
+  counter-increment: vl-step;
+  content: counter(vl-step);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--vl-accent-line);
+  background: var(--vl-accent-soft);
+  color: var(--vl-accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+@media (width <= 820px) {
+  .vl-guide {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Glossary
+ * ------------------------------------------------------------------------ */
+
+.vl-glossary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 0 28px;
+  margin: 0;
+}
+
+.vl-glossary > div {
+  display: grid;
+  gap: 2px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--vl-line);
+}
+
+.vl-glossary dt {
+  font-size: var(--vl-fs-sm);
+  font-weight: 620;
+  color: var(--vl-ink);
+}
+
+.vl-glossary dd {
+  margin: 0;
+  font-size: var(--vl-fs-xs);
+  line-height: 1.6;
+  color: var(--vl-ink-3);
+}
+
+.vl-glossary code {
+  color: var(--vl-accent);
+}
+
+/* --------------------------------------------------------------------------
+ * The opening sequence
+ *
+ * A refrigerated truck crosses the screen once, right to left, and the app is
+ * already mounted behind it. Two rules make it a title card rather than a
+ * loading screen: it never blocks anything (the data is fetching underneath),
+ * and it is skippable with any click or key. `prefers-reduced-motion` skips it
+ * in JavaScript rather than here, because the global reduce rule would leave a
+ * frozen truck on screen for three seconds instead of removing it.
+ * ------------------------------------------------------------------------ */
+
+.vl-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  background: radial-gradient(1100px 620px at 50% 42%, #0e1620, #05080c 72%), var(--vl-bg-0);
+  animation: vl-splash-out 0.55s var(--vl-ease) 4.5s both;
+}
+
+@keyframes vl-splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.vl-splash-stage {
+  position: relative;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 26px;
+}
+
+.vl-splash-lane {
+  position: relative;
+  width: 100%;
+  height: 210px;
+}
+
+/* The road: a hairline, plus dashes that stream the way the truck travels. */
+.vl-splash-road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--vl-line-strong) 14%,
+    var(--vl-line-strong) 86%,
+    transparent
+  );
+}
+
+.vl-splash-dashes {
+  position: absolute;
+  left: -200px;
+  right: -200px;
+  bottom: 19px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgb(45 212 191 / 35%) 0 26px, transparent 26px 74px);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  animation: vl-road 1.3s linear infinite;
+}
+
+@keyframes vl-road {
+  to {
+    transform: translateX(-74px);
+  }
+}
+
+/* The SVG's bottom edge IS the wheel contact line, so this `bottom` matches the
+   road's and the wheels sit on it at any rendered width. */
+.vl-splash-truck {
+  position: absolute;
+  bottom: 17px;
+  left: 0;
+  width: 760px;
+  max-width: 68vw;
+  /* Linear, not eased. A truck crossing a road holds its speed, and a constant
+     rate is also the only one the wheel rotation below can honestly match. */
+  animation: vl-drive 4.6s linear both;
+  filter: drop-shadow(0 14px 20px rgb(0 0 0 / 60%));
+}
+
+@keyframes vl-drive {
+  from {
+    transform: translateX(calc(100vw + 80px));
+  }
+
+  to {
+    transform: translateX(-780px);
+  }
+}
+
+.vl-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vl-roll 0.62s linear infinite;
+}
+
+@keyframes vl-roll {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* A pool of light thrown forward, so the truck reads as moving into the dark. */
+/* There was a headlight pool here, thrown on the road ahead of the cab. It was
+   removed rather than tuned: at any opacity low enough not to look like a stage
+   light, a soft warm ellipse on a near-black background reads as a compression
+   artefact rather than as light. The truck's own drop shadow does the job of
+   sitting it on the road, and one fewer ambiguous shape is the better trade. */
+
+.vl-splash-word {
+  margin: 0;
+  font-size: clamp(1.7rem, 4.6vw, 2.6rem);
+  font-weight: 680;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  color: var(--vl-ink);
+  animation: vl-splash-word 0.7s var(--vl-ease) 0.55s both;
+}
+
+.vl-splash-tag {
+  margin: -14px 0 0;
+  font-size: var(--vl-fs-sm);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--vl-ink-3);
+  text-align: center;
+  padding: 0 20px;
+  animation: vl-splash-word 0.7s var(--vl-ease) 0.8s both;
+}
+
+@keyframes vl-splash-word {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vl-splash-skip {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  font-size: var(--vl-fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4c5a6d;
+  animation: vl-splash-word 0.6s var(--vl-ease) 1.2s both;
+}

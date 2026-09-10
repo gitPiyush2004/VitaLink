@@ -204,12 +204,43 @@ export default tseslint.config(
     },
   },
 
-  // Vite/React entrypoints legitimately use default exports and browser globals.
+  // Browser code: default exports and browser globals are legitimate here.
   {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       'import-x/no-default-export': 'off',
+      // A stylesheet written in TypeScript is nothing but magic numbers, and
+      // naming `padding: 6` would make it less readable, not more.
+      'no-magic-numbers': 'off',
+    },
+  },
+
+  // JSX, wherever it lives. Two size rules are relaxed and one is not, and the
+  // distinction is the point.
+  //
+  // `max-lines-per-function` is OFF. A component's return is one expression: a
+  // table with six columns is a hundred lines of markup that cannot be split
+  // without inventing components whose only purpose is to be shorter. The rule
+  // counts statements as a proxy for how much a reader must hold in their head,
+  // and in JSX that proxy does not hold.
+  //
+  // `complexity` is RAISED to 20 rather than switched off, and only for JSX.
+  // Cyclomatic complexity counts branches, and in a component almost every
+  // branch is `value === null ? "not available — why?" : <Value/>` — a *display*
+  // decision, not a code path anyone has to reason about. Every one of those
+  // ternaries exists because this UI refuses to render a missing value as a
+  // zero, so the rule is penalising precisely the property the project cares
+  // about most. It stays at 10 for `.ts`, where a branch really is logic.
+  //
+  // `max-depth` stays at 3 everywhere, because deeply nested *logic* is still
+  // the thing worth catching and JSX nesting is not measured by it.
+  {
+    files: ['**/*.tsx'],
+    rules: {
+      'max-lines-per-function': 'off',
+      complexity: ['error', 20],
+      'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }],
       'no-magic-numbers': 'off',
     },
   },

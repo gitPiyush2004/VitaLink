@@ -569,3 +569,460 @@ cascade model, each written down with its reason rather than waved through.
 service is wired and GATE 4 is green; joining them is a Phase 7 concern), and the
 physical layer, which is what would let a cascade terminate at a district
 population rather than at a drug.
+
+---
+
+## Phase 11 — EXECUTE: the pharmaceutical carrier recommender
+
+**Gate:** a cascade produces a shipment with **zero manual input**, and the
+comparison table shows every carrier attempted with a reason for each one that
+could not quote.
+
+**Status:** passing. `npm run verify` green — 272 TypeScript tests, 116 Python
+tests, all five CI gates. The whole path ran end to end against live openFDA data,
+a real cascade record and a real Mongo:
+
+```
+$ npm run recommend -- cascade-77c56e8d-… drug:heparin-sodium 120
+
+CONSTRAINTS, all derived — none of these was asked of the operator:
+  temperature      15-25C
+  forbidden        (none stated on the label)
+  handling         gdp
+  deadline         2026-09-27T21:19:07.870Z
+  urgency          LOW
+  customs          false
+
+DERIVATION, in order:
+  - Days of cover band is 19.3-40.0; the LOW edge of 19.3 days classifies as LOW
+    (thresholds: <=2 CRITICAL, <=5 HIGH, <=14 NORMAL).
+  - 19.3 days of cover (LOW edge) minus a 1-day receiving and QC margin gives
+    18.3 usable days, so the deadline is 2026-09-27T21:19:07.870Z.
+  - Temperature requirement 15-25C was parsed from the drug's own openFDA label,
+    not asked of the operator. …
+  - Lane IN-IN is domestic, so customs brokerage is not required.
+  - Gross weight 120.0 kg and volume 0.036 m3 are the operator's consignment
+    figures — no public source states how much of a drug a facility needs. …
+```
+
+Everything under CONSTRAINTS came from the drug's own label and the cascade's
+cover band. The three things on the command line — the cascade, the drug, and the
+consignment weight — are exactly the three no public source states.
+
+### The honesty of the comparison table cost three fixes
+
+The first run of that script produced a table that was technically correct and
+misleading in three separate ways. All three were only visible because it was run
+against live data rather than against the unit tests, which passed throughout.
+
+**"Recommended from 3 of 7 providers."** There is one provider quoting. The mock
+carrier returns three service options — road, air, express — and the coverage
+count was counting _quotes_. It overstated coverage threefold on precisely the
+metric that exists to stop coverage being overstated. `buildCoverageNote` now
+counts distinct providers, and there is a test named `counts providers, not
+quotes` holding it there.
+
+**The note called a mock a "provider".** Fixing the count alone would have left
+"Recommended from 1 of 7 providers", which is true and still lets a screenshot
+imply a carrier quoted. The note now _names_ the providers that quoted, so the
+mock's own display name — "Mock Carrier (development only)" — does the disclosing
+wherever the note travels. That needed no new concept of "is this a mock": naming
+the source was enough.
+
+**Six carriers were each reported as missing the deadline.** The gate is designed
+not to short-circuit, and a carrier that returned nothing was being run through
+all nine rules against an empty payload. So DSV, which has no credentials in this
+environment, was reported as missing the deadline, supporting no temperature range
+_and_ having undocumented GDP — three failures derived from the absence of a
+response, presented alongside the one real failure. "DSV misses the deadline" is
+a claim that cannot be supported about a carrier that never answered.
+
+Rule 7 now fires alone. That is the single exception to the no-short-circuit
+guarantee, it is documented at the top of the gate, and two tests hold both
+halves: an unavailable quote reports only `quote_unavailable`, and a carrier that
+_did_ quote still reports every failure it has.
+
+### The weighting responds, and the sanity check proves it
+
+The spec asks for one test by name: under a CRITICAL profile a carrier that is
+₹6 k cheaper but 25 hours slower must lose to the faster one, and under LOW the
+same pair must reverse. Both hold. A third test asserts the sub-score _values_ are
+identical under both profiles, so the reversal is caused by the weights swapping
+and not by some input having quietly changed — the failure mode where the test
+passes for the wrong reason.
+
+Under CRITICAL the margin is under 2 points. That is worth knowing rather than
+smoothing over: with only a ₹6 k spread the profile does flip the answer, but not
+by much, and the stored breakdown is what lets an operator see it was close.
+
+### A tie that was silently being reversed
+
+`rankCandidates` compared final scores with `!==`. A weighted sum of six terms
+plus a 2-point preference bonus produces 60.00000000000001, not 60 — so the
+tie-break on un-bonused merit could never fire, and a preference bonus that was
+meant to _break_ a tie was instead _reversing_ one on a difference of 1e-14. The
+comparison now uses a thousandth-of-a-point epsilon, which is two orders of
+magnitude below the precision scores are reported at.
+
+This is the failure the design was explicitly trying to avoid — "a preference you
+cannot see is a bug" — and it was in the code that says so.
+
+### Three places a number was technically right and meant nothing
+
+**Prohibited temperature ranges stopped at a warning string.** The label parser
+correctly found cisplatin's "Do not refrigerate", and the eligibility gate had a
+rule for exactly that case, and the two were never connected: the prohibition was
+formatted into a human-readable warning and dropped. It is now a persisted field
+on the drug, threaded through to the gate.
+
+The first live run then crashed on `undefined.length`, because drug documents
+written before that field existed read it back as `undefined` under `lean()` —
+Mongoose's schema default only applies on write. The mapper defaults to `[]` with
+a comment stating that an empty list means "no prohibition has been parsed",
+which is not the same claim as "the label forbids nothing".
+
+**The weight profile's rationale was overwritten by the run's own derivation.**
+`rationale` ("why this profile weights things this way") and `selected_because`
+("why this profile is in force for this shipment") are two different sentences,
+and the mapper was using the second for both. The score breakdown printed the
+entire five-line shipment derivation where the one-line weighting explanation
+belonged. They are separate fields again, and the rationale comes from the live
+table rather than from the stored copy.
+
+**The mock-mode startup warning misdescribed its own output.** It said the mock's
+quotes are "labelled ESTIMATED". They are labelled `SANDBOX_QUOTE`. A warning
+whose job is to prevent a mock being mistaken for a carrier had the wrong status
+string in it.
+
+### What is neutral, and says so on the row
+
+Two of the six sub-scores contribute at the documented neutral value under every
+profile today, and the reason is printed on the row rather than in a footnote:
+
+- **`reliability`** — no carrier publishes a machine-readable on-time figure, and
+  Vitalink has no tracking history yet. Inventing a plausible percentage would be
+  a fabricated number driving a real decision.
+- **`risk`** — a quote does not say which hubs it transits, and the physical layer
+  is not ingested, so there is no way to tell whether a lane runs through the
+  shocked region.
+
+Scoring either zero would punish a carrier for our ignorance; scoring either 100
+would reward them for it.
+
+### NO_ELIGIBLE_CARRIER is an answer, and it was exercised
+
+Re-running the same cascade with 3 days of assumed cover derives a CRITICAL
+urgency and a deadline of _now_ — 0.4 days at the low edge, minus the 1-day
+receiving margin, floored at zero. Every service then misses it:
+
+```
+COMPARISON  (Recommended from 1 of 7 providers: Mock Carrier (development only).
+             6 returned no quote — see the reason on each row. 1 of the providers
+             that did quote was ruled ineligible by a hard constraint.)
+
+  Mock Carrier (development only)  INR 14,200  SANDBOX_QUOTE  NOT ELIGIBLE
+      x deadline_miss: Arrives 2026-09-13T…, which is 96.0h after the required
+        deadline of 2026-09-09T…
+
+  RECOMMENDED: NO ELIGIBLE CARRIER — see the reasons above
+```
+
+That is the correct output. "No carrier can get this here in time" is what an
+operator needs to hear, and the alternative — relaxing a constraint nobody asked
+to relax so the table has a winner in it — is the failure this whole module is
+shaped to avoid.
+
+### Deferred, and why
+
+- **FedEx, UPS, DHL, Kuehne+Nagel and CEVA live adapters.** None has a callable
+  public quote API without an approved commercial account. They are registered
+  with the verified reason for each, checked against their own developer portals
+  and recorded in `docs/CARRIER_STATUS.md`. The stub-only rule from the build
+  prompt applies: the interface exists, the phase is marked blocked, and no data
+  is fabricated.
+- **Tracking ingestion.** The `ShipmentTrackingEvent` contract exists; polling and
+  webhooks are a later phase. It is what would make the `reliability` sub-score
+  real.
+- **Object storage for raw carrier payloads.** `raw_response_ref` currently points
+  at a Redis key with a 30-day TTL, so a quote older than that keeps its reference
+  and loses the payload behind it. Stated in the archiver's own doc comment rather
+  than left to be discovered.
+- **A transaction around superseding.** Two writes, ordered so a crash between
+  them leaves a current recommendation with a stale flag rather than a shipment
+  with no current recommendation at all.
+
+### Gate bookkeeping
+
+Gate 1 needed one new structural-count justification (`weighted_score`, whose
+whole computation is stored alongside it). Gate 2 was **strengthened** rather than
+relaxed: the import check could not see `import { MockCarrierAdapter } from
+'@vitalink/connectors'` because the specifier has no "mock" in it, so a second
+rule now looks for the _construction_ instead, which only the composition root may
+do and only behind `CARRIER_MOCK_MODE`.
+
+Gate 5 caught the mock adapter's own doc comment, which had claimed "the string
+`LIVE_QUOTE` does not appear in this file" — inside the file. The comment now
+describes the string instead of quoting it, and says why.
+
+---
+
+## Phase 12 — SENSE + VERIFY, and the corroboration that mostly fails
+
+**Gate:** three public sources ingested, clustered, corroborated and scored, with
+every rejection kept and explained.
+
+**Status:** passing. Three sources are live — openFDA drug enforcement, openFDA
+drug shortages, and GDELT — and a run stores 97 signals across 88 clusters.
+
+The headline result is that **zero clusters published as alerts**, and that is
+the finding rather than a failure. An FDA recall is usually reported by the FDA
+and nobody else; under the two-independent-sources rule it is not publishable,
+and the quarantine record says so with the reason. The system can now state a
+number about itself: _how much of what it sees can it actually stand behind_.
+
+### GDELT was not down; its handshake is slow
+
+Recorded here because the diagnosis took an hour and the error message was
+actively misleading.
+
+Every GDELT request failed with `UND_ERR_CONNECT_TIMEOUT`, surfaced as _"GDELT
+2.0 DOC API was unreachable"_, while `curl` on the same machine returned 200 for
+the identical URL. DNS was fine. The A and AAAA records both resolved to the same
+IPv4 address, so it was not a Happy Eyeballs problem. `net.setDefaultAutoSelectFamily(false)`
+changed nothing.
+
+A raw probe settled it:
+
+```
+raw TCP connected in 456 ms
+TLS connected in 11477 ms, alpn = false
+```
+
+Their TLS negotiation takes eleven and a half seconds. Undici's connect ceiling
+is ten, and an `AbortController` cannot raise it — the ceiling is inside the
+dispatcher. `curl` succeeded because its default is far longer.
+
+Three consequences, all in the code:
+
+- `packages/connectors/src/http/slow-hosts.ts` exists to hold a 45-second connect
+  timeout, opted into per source. Node's global `fetch` rejects the npm undici
+  package's `Agent` with `UND_ERR_INVALID_ARG` — it validates that a dispatcher
+  is one of _its own_ internal classes — so raising the ceiling means calling
+  undici's own `fetch` for that one source. The branch is commented.
+- `classifyThrow` now walks the cause chain for `UND_ERR_CONNECT_TIMEOUT` and
+  reports a **timeout**, not a network failure. The two map to different
+  `unavailable_reason` values on a carrier quote, so the distinction reaches the
+  UI.
+- The retry backoff no longer undercuts a source's published rate limit. GDELT
+  allows one request every five seconds; the backoff started at 500ms, so a 429
+  was answered 500ms later by a request guaranteed to 429 — four attempts inside
+  3.5 seconds, all four wasted. `backoffDelayMs` now takes the source interval as
+  a floor, and there is a test pinning it.
+
+### Text similarity cannot cluster headlines, at any threshold
+
+The clustering design changed because of one measurement. On a real openFDA
+recall title, 11 words:
+
+```
+ shingle size   one-word rewrite   a DIFFERENT firm, same wording   unrelated
+     n=2             0.667                    0.615                   0.000
+     n=3             0.500                    0.583                   0.000
+     n=5             0.167                    0.500                   0.000
+```
+
+Two things follow.
+
+Five-word shingles are useless on this text: a one-word rewrite scores 0.167,
+indistinguishable from unrelated. There are seven shingles and one changed word
+destroys five of them. Shingle width now adapts to document length, and the
+SimHash prefilter is skipped below twenty features because its Hamming distance
+carries no information there — it had been rejecting genuine rewrites before
+Jaccard ever ran.
+
+More importantly: **at every width, a different firm's identically-worded recall
+scores as similar as a genuine rewrite.** There is no threshold between 0.615 and
+0.667 that is not an accident of the example. So the entity constraint is not a
+refinement on top of text similarity — it is the part that works, and the
+threshold sits where it deliberately under-merges. Under-merging costs a
+duplicate alert and an under-counted independence score; over-merging loses a
+disruption and does so invisibly. The measurement is pinned in the test file so a
+future change cannot quietly invalidate the prose.
+
+### Two feeds from one agency are one source
+
+openFDA's enforcement endpoint and its shortages endpoint are different URLs,
+different schemas, and the same organisation publishing on the same authority.
+Counting them as two would satisfy the two-source rule with one source saying
+something twice — and it would look exactly like corroboration.
+
+`independenceKey` maps every agency source to the agency: both openFDA endpoints
+key to `fda.gov`. The count's explanation says _"2 observations collapsed to 1
+source: 1 came from a publisher already counted"_, because "1 independent source"
+alone is ambiguous between "one feed answered" and "two answered and were
+correctly counted as one".
+
+One limitation is stated rather than solved: thehindu.com and
+thehindubusinessline.com are the same publisher and count as two. Fixing it needs
+a media-ownership dataset that is not open data in any citable form. The gap is
+in `shareOwnership`, in the module README, and every alert names its domains so a
+reader can spot the case.
+
+### The corroboration budget is load-bearing, so it is visible
+
+One targeted GDELT query per cluster, at 5 seconds minimum spacing and about 20
+seconds per response, is fifteen minutes over forty clusters. An operator who
+clicks Verify and waits fifteen minutes does not click it again.
+
+So there is a budget of eight queries per run, spent highest-severity-first, plus
+a per-run breaker: once the source fails, the rest are skipped rather than each
+burning four retries on the same failure.
+
+Both are **reported**. Clusters beyond the budget are recorded as _"corroboration
+was NOT ATTEMPTED"_ rather than as _"no corroboration found"_ — nobody looked,
+which is a different statement from having looked and found nothing. The first
+version of the outcome note got this wrong: it counted only budget-exhausted
+clusters, so during a run where GDELT 429'd after the first query it claimed
+_"every cluster that had an entity to search on was corroborated"_. Reassuring
+and false.
+
+### The corroboration query was a guaranteed miss
+
+The first version joined the firm and the drug:
+
+```
+"Fresenius Kabi USA, LLC" "TOCILIZUMAB-AAZG"
+```
+
+That is an implicit AND, and almost no article names both a corporate entity in
+full and an INN in capitals. It looked like a targeted query and behaved like a
+guaranteed zero. It now asks _did anyone else report an event of this kind at
+this entity_ — the entity with its corporate suffix stripped, AND any one of
+recall / shortage / contamination / halt / suspend / shut — which is narrow
+enough that a quarterly-earnings article does not corroborate a recall.
+
+### Two multi-tenancy bugs, both invisible with one tenant
+
+**A sparse index that indexed everything.** `oauth_subject` had
+`{unique: true, sparse: true}` and `default: null`. A sparse index skips
+documents where the field is _absent_; the default meant it was always present.
+So every password account indexed `null` and the **second** one failed with a
+duplicate key — a bug that can only appear on a deployment's second user, which
+is exactly when nobody is looking. It is a partial index on `$type: 'string'`
+now.
+
+**A derived id that was not tenant-scoped.** Raw signal `_id` was
+`openfda_enforcement:D-0785-2026`, derived from the source's own identifier so
+that re-ingestion is idempotent. That string is identical for every tenant, so
+the second organisation's insert failed on the unique `_id` — and the upsert
+filter `{_id, org_id}` could never match the first org's document, so it never
+became an update either. One tenant could ingest and everybody else got a
+duplicate-key error. The stored key is now `<org>:<external id>`, with the
+source's identifier kept in `external_id`; nothing above the repository sees the
+prefix.
+
+Found because the CLI scripts had been writing to a hardcoded org called `cli`
+while the UI signed in as a real one — which was itself the third instance of the
+same class of mistake, and is why `scripts/cli-org.ts` now resolves the org the
+way a user would.
+
+**Deferred:** the LLM extraction arm. `ANTHROPIC_API_KEY` is unset, and the two
+structured sources need no model at all — openFDA publishes `recalling_firm` and
+`classification` as _fields_. GDELT headlines get keyword extraction, labelled
+`KEYWORD` on every row with the basis recorded, because GDELT's DOC API returns
+no article body and a title is the entire input available to any extractor.
+
+---
+
+## Phase 13 — SIMULATE and DECIDE
+
+**Gate:** a joint (sourcing × logistics) matrix, a Pareto front, and a ranking
+whose weights are visible.
+
+**Status:** passing, end to end against a live cascade and a live recommendation:
+
+```
+$ npm run decide -- cascade-8eeb03d9-… drug:heparin-sodium logrec-2709c744-…
+
+PARETO FRONT (3 of 5 rows — no weights, no opinion)
+CHOSEN: Buy from an already-qualified alternate supplier via Mock Air Freight
+```
+
+### Two answers, and only one of them is an opinion
+
+The Pareto front is a _fact_ about the options: a dominated scenario is no better
+on any axis and worse on at least one, so it can be discarded with no judgement
+at all. Four of seven rows were dominated on the first live run.
+
+Picking one point off the front requires saying how many rupees a day of shortage
+is worth, which nobody can derive. So the weights are configuration, stored with
+the answer, and every scenario's objective value is stored with its per-term
+breakdown. An operator who disagrees looks at the front and picks differently.
+
+### Min-max normalisation amplifies a trivial spread
+
+Worth recording because it will mislead anyone reading a ranking. On the live
+run the exposures were 0.0184 and 0.0028 — one and a half percentage points
+apart — and normalisation turned them into 1.000 and 0.000. The shortage term
+then decided the whole objective on that spread.
+
+The behaviour is correct for _which of these is best_ and misleading for _how
+much does this matter_. Which is why the raw value sits beside the normalised one
+in every stored breakdown and in the UI, and why the front is shown next to the
+ranking rather than instead of it.
+
+### Doing nothing does not recover instantly
+
+The recovery term fell back to an intervention's lead time when the reliability
+model had no figure — and DO_NOTHING has a lead time of zero. The baseline was
+reported as recovering in **zero days**, flattering it on the one axis where it
+is worst. It now uses the shock's own duration from the cascade request.
+
+### An `as` cast is not a mapping
+
+The repository read `doc.scenarios as Scenario[]` and `doc.pareto_front as
+ParetoPoint[]`. Both compiled; both were wrong, because the writer stores those
+in snake_case. Every read produced objects whose fields were all `undefined` and
+whose type claimed otherwise, surfacing three layers away as `Cannot read
+properties of undefined (reading 'toFixed')`. There are explicit mappers now.
+
+**Solver:** exhaustive enumeration, and not as a placeholder. The matrix is
+capped at fifty rows; enumerating fifty and taking the minimum is exact and
+faster than building a CP-SAT model. `solver` and `solver_status` record which
+ran, so a future switch is visible in the data rather than silent.
+
+---
+
+## Phase 14 — The control tower
+
+**Gate:** every stage visible in a browser, every number carrying its tag, every
+gap explaining itself.
+
+**Status:** passing. `npm run dev:web`, five tabs in loop order, and a production
+build at 58 kB gzipped.
+
+The covenant is enforced in the browser the same way it is on the server:
+`<QuantityValue>` takes a `Quantity` and has no prop that accepts a bare number,
+so rendering an unsourced figure is a type error. `<UnavailableValue>` renders
+_"not available — why?"_ with the reason on hover — never a zero and never a
+dash, because "zero facilities at risk" and "unknown facilities at risk" are
+opposite claims and a dash makes the reader guess.
+
+Three deliberate non-uses, each recorded in the file that does not use it:
+`react-router` (five views, no deep links yet), `@tanstack/react-query` (load
+once, reload on a button, no cache graph to coordinate), and
+`eslint-plugin-react-hooks` (its one rule would need suppressing in the one place
+the pattern is correct).
+
+**One lint config change, argued rather than assumed.** `max-lines-per-function`
+is off for `.tsx` and `complexity` is raised to 20 there — but only there.
+Cyclomatic complexity in a component counts _display_ branches, and almost every
+one is `value === null ? "not available — why?" : <Value/>`. Those ternaries
+exist because this UI refuses to render a missing value as a zero, so the rule
+was penalising precisely the property the project cares about most. It stays at
+10 for `.ts`, where a branch is logic.
+
+**Two tsconfig fixes.** `apps/api` and `apps/workers` both globbed
+`packages/*/src/**/*.ts`, which swept in `packages/ui` — a React package — and
+failed their typechecks on a browser dependency neither will ever import. The
+packages are listed by name now.

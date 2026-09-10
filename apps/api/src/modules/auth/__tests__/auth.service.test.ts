@@ -47,6 +47,7 @@ function stubRepository(overrides: RepositoryOverrides = {}): AuthRepository {
     findOrgByEmailDomain: notStubbed('findOrgByEmailDomain'),
     findOrgById: notStubbed('findOrgById'),
     upsertOrgByDomain: notStubbed('upsertOrgByDomain'),
+    listOrgs: notStubbed('listOrgs'),
     ...overrides,
   };
 }

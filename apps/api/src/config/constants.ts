@@ -62,6 +62,15 @@ export const WEBHOOK_REPLAY_WINDOW_SECONDS = 5 * SECONDS_PER_MINUTE;
 // VERIFY (stage 2)
 // ---------------------------------------------------------------------------
 
+/**
+ * How far back VERIFY's clustering window reaches.
+ *
+ * Thirty days: long enough that a recall and the coverage of it land in the same
+ * window even when the press picks it up a fortnight later, short enough that a
+ * cluster is one event rather than a quarter's worth of them.
+ */
+export const CLUSTER_WINDOW_DAYS = 30;
+
 /** Rule from the spec: an alert needs two genuinely independent sources. */
 export const MIN_INDEPENDENT_SOURCES = 2;
 
@@ -151,6 +160,20 @@ export const CIRCUIT_BREAKER_OPEN_MS = 60 * MS_PER_SECOND;
  * assumption is printed on the row. Spec 6.6.
  */
 export const NEUTRAL_SUB_SCORE = 50;
+
+/**
+ * How long an archived raw carrier payload is kept.
+ *
+ * Thirty days: long enough that a recommendation can be audited well after the
+ * shipment, short enough that payloads containing account identifiers are not
+ * kept indefinitely. A quote older than this keeps its reference and loses its
+ * payload, which the archiver's doc comment states plainly.
+ */
+export const CARRIER_RAW_ARCHIVE_TTL_SECONDS =
+  30 * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
+
+/** Characters of a sha256 hex digest used as a short reference. */
+export const HASH_PREFIX_LENGTH = 16;
 
 /** Safety margin subtracted from cover when deriving a delivery deadline. Spec 6.5. */
 export const DEADLINE_SAFETY_MARGIN_DAYS = 1;

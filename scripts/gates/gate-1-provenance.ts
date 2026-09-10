@@ -46,10 +46,29 @@ const STRUCTURAL_COUNTS = new Set([
   'carriers_quoted',
   'node_count',
   'edge_count',
+  // ---- Scenario runs -----------------------------------------------------
+  // The sourcing intervention's three parameters. These are SCENARIO inputs —
+  // the operator chose them, and the schema requires each one with no default —
+  // and the run document's own `provenance` records who ran it and when. A
+  // per-parameter envelope would repeat the same source three times, and the
+  // outcome vector each one feeds *is* a set of Quantities.
+  'lead_time_days',
+  'intervention_cost_inr',
+  'shortage_reduction_fraction',
+
+  // The two Pareto axes. Both are copied off Quantities that live on the
+  // scenario's own outcome vector — `expected_shortage` and the sum of
+  // `intervention_cost_inr` and `logistics_cost_inr` — so wrapping them here
+  // would attach a second, redundant provenance to a number that already
+  // carries one. The plot needs plain numbers to place a point.
+  'expected_shortage_s',
+  'total_cost_inr',
+
   // Deterministic scoring internals; the whole computation is stored alongside.
   'value',
   'weight',
   'contribution',
+  'weighted_score',
   'final_score',
   'preference_bonus',
   'confidence',

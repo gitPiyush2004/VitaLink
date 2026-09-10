@@ -186,6 +186,24 @@ async function findOrgById(id: string): Promise<OrgEntity | null> {
  * point: a unit test can satisfy this with seven one-line stubs, and the service
  * never learns that Mongo exists.
  */
+/**
+ * Every organisation, id and name only.
+ *
+ * A tiny query with a specific job: a CLI script has no request to take an org
+ * from, and hardcoding one meant the pipeline wrote to a tenant no user belonged
+ * to. See `scripts/cli-org.ts`.
+ */
+async function listOrgs(): Promise<{ id: string; name: string }[]> {
+  try {
+    const docs = await OrgModel.find({}, { name: 1 })
+      .lean<{ _id: unknown; name: string }[]>()
+      .exec();
+    return docs.map((doc) => ({ id: String(doc._id), name: doc.name }));
+  } catch (error) {
+    throw new DatabaseError('listOrgs', error);
+  }
+}
+
 export type AuthRepository = {
   findUserByEmailWithSecret(email: string): Promise<UserWithSecret | null>;
   findUserById(id: string): Promise<UserEntity | null>;
@@ -195,6 +213,7 @@ export type AuthRepository = {
   findOrgByEmailDomain(domain: string): Promise<OrgEntity | null>;
   findOrgById(id: string): Promise<OrgEntity | null>;
   upsertOrgByDomain(input: { name: string; emailDomain: string }): Promise<OrgEntity>;
+  listOrgs(): Promise<{ id: string; name: string }[]>;
 };
 
 export function createAuthRepository(): AuthRepository {
@@ -207,5 +226,6 @@ export function createAuthRepository(): AuthRepository {
     findOrgByEmailDomain,
     findOrgById,
     upsertOrgByDomain,
+    listOrgs,
   };
 }

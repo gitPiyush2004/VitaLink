@@ -164,6 +164,18 @@ export class AuthService {
     return { id: org.id, name: org.name };
   }
 
+  /**
+   * Every organisation, id and name only.
+   *
+   * Exists for the CLI scripts, which have no request to take an org from and
+   * used to hardcode one. Hardcoding meant the pipeline wrote to a tenant no
+   * user belonged to, so the control tower found nothing — see
+   * `scripts/cli-org.ts`.
+   */
+  async listOrgs(): Promise<{ id: string; name: string }[]> {
+    return this.repository.listOrgs();
+  }
+
   async getPublicUser(userId: string): Promise<PublicUser> {
     const user = await this.repository.findUserById(userId);
     if (user === null) {

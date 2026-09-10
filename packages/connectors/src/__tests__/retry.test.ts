@@ -82,3 +82,30 @@ describe('retryAfterMs', () => {
     expect(retryAfterMs(inThePast, 1)).toBe(0);
   });
 });
+
+describe('the backoff never undercuts the source own published limit', () => {
+  it('starts at the source interval rather than at 500ms', () => {
+    // Found by running it against GDELT, which publishes one request every five
+    // seconds. The 500ms first retry meant a 429 was answered 500ms later by
+    // another request that was guaranteed to 429 — four attempts inside 3.5
+    // seconds against a five-second limit, all four wasted.
+    const GDELT_INTERVAL_MS = 5000;
+
+    expect(backoffDelayMs(1, GDELT_INTERVAL_MS)).toBe(GDELT_INTERVAL_MS);
+    expect(backoffDelayMs(2, GDELT_INTERVAL_MS)).toBe(2 * GDELT_INTERVAL_MS);
+  });
+
+  it('leaves a source with no published limit on the original schedule', () => {
+    expect(backoffDelayMs(1)).toBe(500);
+    expect(backoffDelayMs(2)).toBe(1000);
+    expect(backoffDelayMs(3)).toBe(2000);
+  });
+
+  it('floors a Retry-After that contradicts the published limit', () => {
+    // A server that publishes a five-second limit and then sends
+    // `Retry-After: 0` is contradicting itself. The limit is the safer reading.
+    expect(retryAfterMs('0', 1, 5000)).toBe(5000);
+    // A longer Retry-After still wins: the server knows more than we do.
+    expect(retryAfterMs('12', 1, 5000)).toBe(12_000);
+  });
+});

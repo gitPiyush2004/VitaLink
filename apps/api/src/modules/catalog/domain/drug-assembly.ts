@@ -50,6 +50,15 @@ export type StorageFacts = {
   text: string | null;
   reason: string;
   excursionQuantity: DrugUpsertInput['excursionUpperC'];
+  /**
+   * Ranges the label forbids — cisplatin's "Do not refrigerate".
+   *
+   * Persisted rather than left in the parse reason, because the eligibility gate
+   * acts on it: a carrier whose only service is refrigerated is *ineligible* for
+   * a drug whose label forbids refrigeration. A prohibition that lived only in a
+   * warning string would have been read by a human and by nothing else.
+   */
+  prohibitedRanges: DrugUpsertInput['prohibitedTemperatureRanges'];
 };
 
 /**
@@ -154,6 +163,7 @@ export function buildDrugUpsert(input: {
     storageParseReason: storage.reason,
     coldChain: storage.isColdChain,
     excursionUpperC: storage.excursionQuantity,
+    prohibitedTemperatureRanges: storage.prohibitedRanges,
 
     // No NPPA client yet, so there is no honest rupee basis. Null renders as an
     // empty state with a reason rather than as a zero.

@@ -16,5 +16,13 @@
       "@modules/*": ["src/modules/*"]
     }
   },
-  "include": ["src/**/*.ts", "../../packages/*/src/**/*.ts"]
+  // Listed rather than globbed. `packages/*` swept in `packages/ui`, which is
+  // React and needs `jsx` set — so the API's typecheck failed on a browser
+  // package it will never import.
+  "include": [
+    "src/**/*.ts",
+    "../../packages/contracts/src/**/*.ts",
+    "../../packages/connectors/src/**/*.ts",
+    "../../packages/graph/src/**/*.ts"
+  ]
 }

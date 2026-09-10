@@ -15,6 +15,8 @@ import { createCascadeService } from '@modules/cascade';
 import { createGraphService } from '@modules/graph';
 import { connectMongo, connectRedis, disconnectMongo, disconnectRedis } from '@shared/db';
 
+import { resolveCliOrg } from './cli-org';
+
 const ARGV_OFFSET = 2;
 const DEFAULT_COVER_DAYS = 30;
 const DEFAULT_DURATION_DAYS = 90;
@@ -49,8 +51,9 @@ async function main(): Promise<void> {
 
   console.log(`\nshock: ${node.label}  [${node.type}]  ${node.id}\n`);
 
+  const org = await resolveCliOrg();
   const cascade = await createCascadeService().run({
-    orgId: 'cli',
+    orgId: org,
     shockNodeId,
     alertId: null,
     durationDays: DEFAULT_DURATION_DAYS,

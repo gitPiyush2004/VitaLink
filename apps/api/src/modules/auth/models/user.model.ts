@@ -62,9 +62,22 @@ userSchema.index({ email: 1 }, { unique: true });
 // order matters: equality field first, then the sort field. ADR-0005.
 userSchema.index({ org_id: 1, created_at: -1 });
 
-// Sparse because most users have no OAuth subject, and a non-sparse unique index
-// would reject the second null.
-userSchema.index({ oauth_subject: 1 }, { unique: true, sparse: true });
+// Unique only over documents that actually have an OAuth subject.
+//
+// This was `sparse: true` first, which looks right and does nothing here: a
+// sparse index skips documents where the field is *absent*, and `default: null`
+// above means the field is always present. So every password account indexed
+// `null`, and the SECOND one failed with a duplicate key error — a bug that
+// could only appear on a deployment's second user, which is exactly when nobody
+// is looking for it.
+//
+// A partial index on `$type: 'string'` is the correct expression of the
+// intent: two Google accounts may not share a subject, and password accounts
+// are not in the index at all.
+userSchema.index(
+  { oauth_subject: 1 },
+  { unique: true, partialFilterExpression: { oauth_subject: { $type: 'string' } } },
+);
 
 userSchema.pre('save', function normaliseEmail(next) {
   if (this.isModified('email')) {
