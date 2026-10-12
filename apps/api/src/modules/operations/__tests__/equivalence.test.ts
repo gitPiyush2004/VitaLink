@@ -29,6 +29,16 @@ describe('resolveEquivalence', () => {
     expect(result).toMatchObject({ teCode: 'AP', marketingStatus: 'Prescription' });
   });
 
+  it('withholds an explicit strength contradiction even in a single-product application', () => {
+    expect(resolveEquivalence(record([product()]), '500 UNITS/100ML').teCode).toBeNull();
+  });
+
+  it('withholds combination evidence instead of selecting by only the first ingredient', () => {
+    const result = resolveEquivalence(record([product()]), '200 UNITS/100ML', 2);
+    expect(result.teCode).toBeNull();
+    expect(result.marketingStatus).toBeNull();
+  });
+
   it('selects by strength across differently printed units', () => {
     // 2,000 units in 1000 mL is the same concentration as 200 in 100 mL.
     const result = resolveEquivalence(

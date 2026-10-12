@@ -19,6 +19,7 @@
  *    carried separately in `equivalence`.
  */
 
+import { parseFdaDate } from '@vitalink/connectors';
 import type {
   CandidateAttribute,
   CandidateEquivalence,
@@ -39,6 +40,7 @@ export type CandidateReference = {
   dosageForm: string | null;
   routes: string[];
   marketingCategory: string | null;
+  limits?: string[];
 };
 
 /** The subset of an openFDA NDC listing this comparison needs. */
@@ -102,6 +104,15 @@ function strengthOf(source: CandidateSource, ingredient: string): string | null 
 
 function strength(reference: CandidateReference, source: CandidateSource): CandidateAttribute {
   const candidate = strengthOf(source, reference.ingredient);
+  if (reference.ingredientNames.length !== 1 || source.ingredients.length !== 1) {
+    return {
+      attribute: 'strength',
+      verdict: 'unknown',
+      reference: reference.strength,
+      candidate,
+      note: 'Combination-product strengths are not fully compared. The first ingredient alone cannot establish a strength match.',
+    };
+  }
   const verdict = compareStrength(reference.strength, candidate);
   const notes: Record<StrengthVerdict, string> = {
     same: `Same ${reference.ingredient} concentration once units are normalised. ${ACTIVITY_NOTE}`,
@@ -210,10 +221,13 @@ function marketingCategory(
   };
 }
 
+const ISO_DATE_LENGTH = 10;
+
 function expired(listingExpiryDate: string | null, asOf: Date): boolean {
   if (listingExpiryDate === null) return false;
-  const expiry = Date.parse(listingExpiryDate);
-  return Number.isFinite(expiry) && expiry < asOf.getTime();
+  const expiry = parseFdaDate(listingExpiryDate);
+  // A date-only listing remains current throughout its stated UTC calendar day.
+  return expiry !== null && expiry < asOf.toISOString().slice(0, ISO_DATE_LENGTH);
 }
 
 /** Disqualifying facts, each stated as the reason an analyst would need to hear. */

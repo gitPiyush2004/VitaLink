@@ -8,23 +8,15 @@
  * Write clauses separated by spaces — `a AND b` — and let `URLSearchParams`
  * encode the space as `+`, which is what openFDA expects.
  *
- * This is the most important source in the project. It supplies:
+ * NDC and label records support product identity and labeler associations;
+ * enforcement records supply reported recalls. Shortages are mutable current
+ * presentation records, not a complete dated history of shortage episodes.
+ * Drugs@FDA supplies approval and published therapeutic-equivalence evidence.
+ * None establishes hospital stock, physical supplier dependencies or recovery
+ * rates. An empty query is absence of records within that query's coverage.
  *
- *   drug/ndc          the product universe, and the distinct manufacturer count
- *                     that becomes `z_api` in the reliability model
- *   drug/label        active ingredients, and the storage-and-handling text that
- *                     the cold-chain flag and `temperature_requirement` are read
- *                     from — never asked of the user
- *   drug/enforcement  recall history, which is both a disruption signal and the
- *                     series that lambda (failure rate) is fitted from
- *   drug/shortages    shortage events with start and resolution dates, which mu
- *                     (repair rate) is fitted from, and which are the ground
- *                     truth for the evaluation harness
- *
- * One real-world detail worth knowing: openFDA answers a query with no matches
- * with **HTTP 404**, not an empty result array. Treating that as an error would
- * turn "this drug has never been recalled" — a perfectly good, and important,
- * finding — into a failed ingestion run. `search` returns an empty list instead.
+ * openFDA reports an empty search with HTTP 404; preserve that as an empty
+ * page rather than a failed ingestion.
  */
 
 import { z } from 'zod';
@@ -187,10 +179,11 @@ export const shortageSchema = z.object({
   proprietary_name: z.string().optional(),
   company_name: z.string().optional(),
   status: z.string().optional(),
-  /** ISO date. Present on resolved records; this is what mu is fitted from. */
+  /** FDA currently prints MM/DD/YYYY; these fields do not prove resolution. */
   initial_posting_date: z.string().optional(),
   update_date: z.string().optional(),
   change_date: z.string().optional(),
+  discontinued_date: z.string().optional(),
   shortage_reason: z.string().optional(),
   availability_information: z.string().optional(),
   therapeutic_category: z.array(z.string()).optional(),
@@ -239,10 +232,12 @@ type EndpointName = keyof typeof ENDPOINTS;
 export const countBucketSchema = z.object({ term: z.string(), count: z.number() });
 export type CountBucket = z.infer<typeof countBucketSchema>;
 
+export type FdaPage<T> = Fetched<T[]> & { total: number | null };
+
 export class OpenFdaClient {
   constructor(private readonly http: CachedHttpClient) {}
 
-  searchNdc(query: OpenFdaQuery): Promise<Fetched<NdcProduct[]>> {
+  searchNdc(query: OpenFdaQuery): Promise<FdaPage<NdcProduct>> {
     return this.search('ndc', query, ndcProductSchema);
   }
 
@@ -250,15 +245,15 @@ export class OpenFdaClient {
     return this.search('label', query, labelSchema);
   }
 
-  searchEnforcement(query: OpenFdaQuery): Promise<Fetched<EnforcementReport[]>> {
+  searchEnforcement(query: OpenFdaQuery): Promise<FdaPage<EnforcementReport>> {
     return this.search('enforcement', query, enforcementSchema);
   }
 
-  searchShortages(query: OpenFdaQuery): Promise<Fetched<ShortageRecord[]>> {
+  searchShortages(query: OpenFdaQuery): Promise<FdaPage<ShortageRecord>> {
     return this.search('shortages', query, shortageSchema);
   }
 
-  searchDrugsFda(query: OpenFdaQuery): Promise<Fetched<DrugsFdaRecord[]>> {
+  searchDrugsFda(query: OpenFdaQuery): Promise<FdaPage<DrugsFdaRecord>> {
     return this.search('drugsfda', query, drugsFdaSchema);
   }
 
@@ -291,7 +286,7 @@ export class OpenFdaClient {
     endpoint: EndpointName,
     query: OpenFdaQuery,
     resultSchema: z.ZodType<T>,
-  ): Promise<Fetched<T[]>> {
+  ): Promise<FdaPage<T>> {
     const config = sourceConfig(ENDPOINTS[endpoint]);
     const url = buildUrl(config.baseUrl, query);
 
@@ -308,13 +303,18 @@ export class OpenFdaClient {
         envelopeSchema(resultSchema),
       );
 
-      return { ...response, data: response.data.results };
+      return {
+        ...response,
+        data: response.data.results,
+        total: response.data.meta.results?.total ?? null,
+      };
     } catch (error) {
       // A 404 from openFDA means "nothing matched", which is a result, not a
       // failure. See the note at the top of this file.
       if (error instanceof ConnectorError && error.kind === 'not_found') {
         return {
           data: [],
+          total: 0,
           provenance: {
             source_name: config.displayName,
             source_url: url,

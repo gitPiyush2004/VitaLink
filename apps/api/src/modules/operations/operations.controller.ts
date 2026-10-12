@@ -7,6 +7,7 @@ import { sendCreated, sendOk } from '@shared/http';
 import type {
   analyseBody,
   createBody,
+  decisionBody,
   idParams,
   linkBody,
   planBody,
@@ -67,8 +68,15 @@ function commands(
 }
 function traceCommands(
   service: OperationsService,
-): Record<'trace' | 'link' | 'update', RequestHandler> {
+): Record<'trace' | 'link' | 'update' | 'decide', RequestHandler> {
   return {
+    decide: async (req, res) => {
+      const auth = identity(req);
+      sendOk(
+        res,
+        await service.decide(auth.org, auth.sub, id(req), req.body as z.infer<typeof decisionBody>),
+      );
+    },
     trace: async (req, res) => {
       const auth = identity(req);
       sendOk(
@@ -99,30 +107,48 @@ function traceCommands(
 }
 export function createOperationsController() {
   const service = createOperationsService();
-  const queries: Record<'dashboard' | 'refresh' | 'get' | 'watch' | 'removeWatch', RequestHandler> =
-    {
-      dashboard: async (req, res) => {
-        sendOk(res, {
-          ...(await service.dashboard(identity(req).org)),
-          worker: await workerStatus(),
-        });
-      },
-      refresh: async (_req, res) => {
-        sendOk(res, await queueRefresh());
-      },
-      get: async (req, res) => {
-        sendOk(res, await service.get(identity(req).org, id(req)));
-      },
-      watch: async (req, res) => {
-        sendCreated(
-          res,
-          await service.watch(identity(req).org, req.body as z.infer<typeof watchBody>),
-        );
-      },
-      removeWatch: async (req, res) => {
-        await service.removeWatch(identity(req).org, id(req));
-        sendOk(res, { removed: true });
-      },
-    };
+  const queries: Record<
+    | 'dashboard'
+    | 'refresh'
+    | 'get'
+    | 'watch'
+    | 'removeWatch'
+    | 'sourceHistory'
+    | 'report'
+    | 'archive',
+    RequestHandler
+  > = {
+    archive: async (req, res) => {
+      sendOk(res, await service.archive(identity(req).org, id(req)));
+    },
+    sourceHistory: async (req, res) => {
+      sendOk(res, await service.sourceHistory(id(req)));
+    },
+    report: async (req, res) => {
+      sendOk(res, await service.report(identity(req).org, id(req)));
+    },
+    dashboard: async (req, res) => {
+      sendOk(res, {
+        ...(await service.dashboard(identity(req).org)),
+        worker: await workerStatus(),
+      });
+    },
+    refresh: async (_req, res) => {
+      sendOk(res, await queueRefresh());
+    },
+    get: async (req, res) => {
+      sendOk(res, await service.get(identity(req).org, id(req)));
+    },
+    watch: async (req, res) => {
+      sendCreated(
+        res,
+        await service.watch(identity(req).org, req.body as z.infer<typeof watchBody>),
+      );
+    },
+    removeWatch: async (req, res) => {
+      await service.removeWatch(identity(req).org, id(req));
+      sendOk(res, { removed: true });
+    },
+  };
   return { ...queries, ...commands(service), ...traceCommands(service) };
 }

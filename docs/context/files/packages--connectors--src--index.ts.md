@@ -31,7 +31,13 @@ Other import specifiers: none.
 
 - [apps/api/src/modules/catalog/catalog.service.ts](./apps--api--src--modules--catalog--catalog.service.ts.md)
 - [apps/api/src/modules/logistics/logistics.service.ts](./apps--api--src--modules--logistics--logistics.service.ts.md)
+- [apps/api/src/modules/operations/**tests**/candidate-discovery.test.ts](./apps--api--src--modules--operations--__tests__--candidate-discovery.test.ts.md)
+- [apps/api/src/modules/operations/**tests**/candidate-reference.test.ts](./apps--api--src--modules--operations--__tests__--candidate-reference.test.ts.md)
+- [apps/api/src/modules/operations/**tests**/ingestion.test.ts](./apps--api--src--modules--operations--__tests__--ingestion.test.ts.md)
+- [apps/api/src/modules/operations/domain/candidate-reference.ts](./apps--api--src--modules--operations--domain--candidate-reference.ts.md)
+- [apps/api/src/modules/operations/domain/candidates.ts](./apps--api--src--modules--operations--domain--candidates.ts.md)
 - [apps/api/src/modules/operations/domain/incidents.ts](./apps--api--src--modules--operations--domain--incidents.ts.md)
+- [apps/api/src/modules/operations/domain/shortage-evidence.ts](./apps--api--src--modules--operations--domain--shortage-evidence.ts.md)
 - [apps/api/src/modules/operations/index.ts](./apps--api--src--modules--operations--index.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
 - [apps/api/src/modules/operations/operations.candidates.ts](./apps--api--src--modules--operations--operations.candidates.ts.md)
@@ -44,6 +50,13 @@ Other import specifiers: none.
 - [apps/api/src/modules/signals/signals.verify.ts](./apps--api--src--modules--signals--signals.verify.ts.md)
 - [apps/api/src/shared/connectors/carriers.ts](./apps--api--src--shared--connectors--carriers.ts.md)
 - [apps/api/src/shared/connectors/index.ts](./apps--api--src--shared--connectors--index.ts.md)
+- [eval/public-data-summary.ts](./eval--public-data-summary.ts.md)
+- [eval/public-data.ts](./eval--public-data.ts.md)
+- [eval/replay-public.ts](./eval--replay-public.ts.md)
+- [scripts/history/**tests**/history.test.ts](./scripts--history--__tests__--history.test.ts.md)
+- [scripts/history/**tests**/persistence.test.ts](./scripts--history--__tests__--persistence.test.ts.md)
+- [scripts/history/collect.ts](./scripts--history--collect.ts.md)
+- [scripts/history/snapshot-store.ts](./scripts--history--snapshot-store.ts.md)
 - [scripts/probe-sources.ts](./scripts--probe-sources.ts.md)
 
 ## Maintenance and verification

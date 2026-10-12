@@ -6,7 +6,15 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM"],
     "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@vitalink/contracts": ["packages/contracts/src/index.ts"],
+      "@vitalink/connectors": ["packages/connectors/src/index.ts"],
+      "@vitalink/graph": ["packages/graph/src/index.ts"],
+      "@config/*": ["apps/api/src/config/*"],
+      "@shared/*": ["apps/api/src/shared/*"],
+      "@modules/*": ["apps/api/src/modules/*"]
+    }
   },
   "include": ["scripts/**/*.ts", "eval/**/*.ts", "vitest.config.mts"]
 }

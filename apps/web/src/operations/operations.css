@@ -958,3 +958,102 @@
   color: #e5edf6;
   border-color: #293e53;
 }
+
+.op-timeline {
+  list-style: none;
+  margin: 24px 0;
+  padding: 0 0 0 18px;
+  border-left: 1px solid #37566c;
+}
+.op-timeline > li {
+  position: relative;
+  padding: 0 0 22px 6px;
+}
+.op-timeline > li::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00d4ff;
+}
+.op-timeline time {
+  color: #93b9cb;
+  font-size: 11px;
+}
+.op-timeline h4 {
+  margin: 8px 0;
+  font-size: 13px;
+}
+.op-field-change {
+  margin: 14px 0;
+  padding: 12px;
+  background: #111c2a;
+  border-left: 2px solid #f4b860;
+  overflow-wrap: anywhere;
+}
+.op-field-change > b {
+  color: #d4e3ec;
+  font-size: 12px;
+}
+.op-field-change > div {
+  margin-top: 8px;
+}
+.op-field-change span {
+  font-size: 10px;
+  color: #91a3b9;
+}
+.op-field-change p {
+  margin: 4px 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.op-current-source {
+  margin: 18px 0;
+  border: 1px solid #37566c;
+  padding: 14px;
+  background: #112431;
+}
+.op-current-source p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.op-current-source small {
+  color: #91a3b9;
+}
+.op-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+.op-report-preview {
+  display: block;
+  width: 100%;
+  height: 680px;
+  border: 1px solid #37566c;
+  background: white;
+}
+.op-detail .op-tabs button {
+  min-width: 68px;
+  flex: 0 0 auto;
+}
+.op-detail .op-tabs button:last-child {
+  min-width: 100px;
+}
+.op-history details p {
+  overflow-wrap: anywhere;
+}
+
+.op-archive-row {
+  padding: 12px;
+  margin-top: 12px;
+  border-left: 2px solid #37566c;
+  background: #111c2a;
+  font-size: 11px;
+}
+.op-archive-row p {
+  overflow-wrap: anywhere;
+}

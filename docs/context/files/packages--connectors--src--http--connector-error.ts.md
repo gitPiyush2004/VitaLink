@@ -34,6 +34,7 @@ Other import specifiers: none.
 - [packages/connectors/src/http/cached-client.ts](./packages--connectors--src--http--cached-client.ts.md)
 - [packages/connectors/src/http/classify.ts](./packages--connectors--src--http--classify.ts.md)
 - [packages/connectors/src/http/index.ts](./packages--connectors--src--http--index.ts.md)
+- [packages/connectors/src/sources/**tests**/openfda-page.test.ts](./packages--connectors--src--sources--__tests__--openfda-page.test.ts.md)
 - [packages/connectors/src/sources/comtrade.client.ts](./packages--connectors--src--sources--comtrade.client.ts.md)
 - [packages/connectors/src/sources/geo.client.ts](./packages--connectors--src--sources--geo.client.ts.md)
 - [packages/connectors/src/sources/openfda.client.ts](./packages--connectors--src--sources--openfda.client.ts.md)

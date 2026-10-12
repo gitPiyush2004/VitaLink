@@ -23,6 +23,7 @@ export function Workspace({
   const [record, setRecord] = useState<Investigation | null>(null);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('ALL');
+  const [sourceStatus, setSourceStatus] = useState('ALL');
   const [watchOnly, setWatchOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function Workspace({
   const visible = incidents.filter(
     (one) =>
       (kind === 'ALL' || one.kind === kind) &&
+      (sourceStatus === 'ALL' || one.status === sourceStatus) &&
       (!watchOnly || isWatched(one, data?.watches ?? [])) &&
       `${one.title} ${one.company} ${one.reason} ${one.genericNames.join(' ')} ${one.productNdcs.join(' ')} ${one.substances.join(' ')}`
         .toLowerCase()
@@ -101,9 +103,14 @@ export function Workspace({
         record={record}
         query={query}
         kind={kind}
+        sourceStatus={sourceStatus}
+        setSourceStatus={setSourceStatus}
         watchOnly={watchOnly}
         setQuery={setQuery}
-        setKind={setKind}
+        setKind={(value) => {
+          setKind(value);
+          setSourceStatus('ALL');
+        }}
         setWatchOnly={setWatchOnly}
         choose={choose}
         openCase={(one) => {

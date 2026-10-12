@@ -41,7 +41,7 @@ cd apps/brain
 
 `verify` includes formatting, ESLint, API/worker/web type checks, TypeScript tests, provenance/fixture/HTTP/mock-quote/secret gates and documentation consistency. Python has separate lint/type/test checks; pytest includes the paper reproduction gate.
 
-The connected implementation previously passed **337 TypeScript tests across 21 files and 118 Python tests**. These are dated check results, not a hardcoded expectation for future commits. The web production build passed with a large-chunk warning; Python reported a Starlette deprecation warning. Paper reproduction verifies formulas and reference configurations, not predictive accuracy.
+The connected implementation passed on 13 October 2026 **434 TypeScript tests across 35 files and 118 Python tests**. These are dated check results, not a hardcoded expectation for future commits. The web production build passed with a large-chunk warning; Python reported a Starlette deprecation warning. Paper reproduction verifies formulas and reference configurations, not predictive accuracy.
 
 ## Local acceptance evidence
 
@@ -65,3 +65,11 @@ npm run docs:context:check
 ```
 
 The generator inventories tracked and nonignored new files outside `docs/context`, extracts static source structure and records fingerprints. The check fails for missing/stale/extra file notes or broken local Markdown links. CI does not require Obsidian; its CLI is used locally to author and inspect the same portable Markdown vault.
+
+## Phase 1 acceptance and current local URL
+
+The final review build was exercised at `http://localhost:5180`, proxied to API port 4001 with the queue/cache in Redis database 1. MongoDB remains on local port 27018 and brain on 8000. An earlier non-watching process remained on 4000; these alternate ports isolate the current worker queue. Normal fresh-checkout defaults remain web 5173 and API 4000.
+
+To use alternate ports, run `API_PORT=4001 WEB_ORIGIN=http://localhost:5180 REDIS_URL=redis://127.0.0.1:6380/1 npm run dev:api`, the worker with the same Redis URL, and `VITALINK_API_PROXY_TARGET=http://localhost:4001 npm run dev --workspace @vitalink/web -- --port 5180`. These are local runtime choices, not hardcoded deployment settings.
+
+Two real-source cases completed with no stock, quotes or route assumptions: heparin candidate investigation and recall lot-scope escalation intent. HTML/JSON exports and auth/org/concurrency checks passed. Separate-database repository checks preserved versions through monitor pruning and rejected changed archive interpretations. The verified 47-snapshot archive reimport was idempotent. See [review readiness](14_PHASE1_REVIEW_READINESS.md).

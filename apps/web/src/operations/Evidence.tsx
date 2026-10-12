@@ -6,14 +6,18 @@ export function Evidence({
   incident,
   onInvestigate,
   busy,
+  preserved = false,
 }: {
   incident: Incident;
   onInvestigate: () => void;
   busy: boolean;
+  preserved?: boolean;
 }): React.ReactElement {
   return (
     <>
-      <div className="op-section-label">01 / SOURCE EVIDENCE</div>
+      <div className="op-section-label">
+        {preserved ? 'Evidence preserved when this case opened' : 'Source evidence'}
+      </div>
       <div className="op-title-row">
         <span className={`op-tag ${incident.kind === 'RECALL' ? 'amber' : 'cyan'}`}>
           {incident.kind}
@@ -75,9 +79,11 @@ export function Evidence({
         <a className="op-link" href={incident.sourceUrl} target="_blank" rel="noreferrer">
           Open original FDA record ↗
         </a>
-        <button className="op-primary" disabled={busy} onClick={onInvestigate}>
-          Open investigation →
-        </button>
+        {!preserved && (
+          <button className="op-primary" disabled={busy} onClick={onInvestigate}>
+            Open investigation →
+          </button>
+        )}
       </div>
       <p className="op-muted">
         A regulatory event does not establish a shortage at your organisation. Investigate the

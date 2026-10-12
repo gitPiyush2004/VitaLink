@@ -19,11 +19,19 @@
  * "these are the alternatives" and "these are the alternatives we could see".
  */
 
-import type { NdcProduct, OpenFdaClient } from '@vitalink/connectors';
+import {
+  parseFdaDate,
+  type FdaPage,
+  type NdcProduct,
+  type OpenFdaClient,
+} from '@vitalink/connectors';
 import type { CandidateSet, Provenance, ProductCandidate } from '@vitalink/contracts';
 
+import { flagDuplicateCandidates } from './domain/candidate-identity';
+import { candidateReference } from './domain/candidate-reference';
 import { buildCandidate, rankCandidates, type CandidateReference } from './domain/candidates';
 import { resolveEquivalence, type ApprovalRecord } from './domain/equivalence';
+import { shortageEvidenceByNdc } from './domain/shortage-evidence';
 
 /** openFDA pages at 100; one page keeps discovery inside a single request. */
 const CANDIDATE_LIMIT = 100;
@@ -71,58 +79,39 @@ function toSource(product: NdcProduct): Source {
 }
 
 export class CandidateDiscovery {
-  constructor(private readonly fda: OpenFdaClient) {}
+  constructor(
+    private readonly fda: Pick<OpenFdaClient, 'searchNdc' | 'searchDrugsFda' | 'searchShortages'>,
+  ) {}
 
   /**
-   * Builds the baseline from the incident's own product NDC.
-   *
-   * The incident names a specific listing, and that listing — not the generic
-   * name — carries the strength, dosage form and route a candidate has to be
-   * read against. When the incident reports no NDC (shortage records often do
-   * not), the baseline falls back to the generic name with its attributes
-   * unknown, and every attribute comparison correctly returns `unknown` rather
-   * than inventing a reference to match against.
+   * Selects one incident listing matching the medicine under analysis.
+   * Its strength, form and route supply the baseline. Missing, ambiguous or
+   * incomplete lookups preserve unknown presentation attributes and explain
+   * the limitation; the first incident NDC is never an arbitrary fallback.
    */
   async reference(input: {
     productNdcs: string[];
     genericName: string;
   }): Promise<{ reference: CandidateReference; provenance: Provenance | null }> {
-    const ndc = input.productNdcs[0];
-    const fallback: CandidateReference = {
-      productNdc: ndc ?? null,
-      label: input.genericName,
-      ingredient: input.genericName,
-      ingredientNames: [input.genericName],
-      strength: null,
-      dosageForm: null,
-      routes: [],
-      marketingCategory: null,
-    };
-    if (ndc === undefined) return { reference: fallback, provenance: null };
-
+    if (input.productNdcs.length === 0) {
+      return { reference: candidateReference([], input.genericName), provenance: null };
+    }
+    const ndcs = [...new Set(input.productNdcs)].slice(0, CANDIDATE_LIMIT);
+    const clause = ndcs.map((ndc) => `"${quote(ndc)}"`).join(' OR ');
     const listing = await this.fda.searchNdc({
-      search: `product_ndc:"${quote(ndc)}"`,
-      limit: 1,
+      search: `product_ndc:(${clause})`,
+      limit: CANDIDATE_LIMIT,
     });
-    const product = listing.data[0];
-    if (product === undefined) return { reference: fallback, provenance: listing.provenance };
-
-    const source = toSource(product);
+    const incomplete =
+      new Set(input.productNdcs).size > ndcs.length ||
+      (listing.total !== null && listing.total > listing.data.length);
     return {
+      reference: candidateReference(
+        listing.data.filter((product) => ndcs.includes(product.product_ndc)),
+        input.genericName,
+        incomplete,
+      ),
       provenance: listing.provenance,
-      reference: {
-        productNdc: source.productNdc,
-        label: source.genericName,
-        // The listing's own first active ingredient, which is what the NDC
-        // directory indexes on — a combination product's generic name is not a
-        // queryable ingredient.
-        ingredient: source.ingredients[0]?.name ?? input.genericName,
-        ingredientNames: source.ingredients.map((one) => one.name),
-        strength: source.ingredients[0]?.strength ?? null,
-        dosageForm: source.dosageForm,
-        routes: source.routes,
-        marketingCategory: source.marketingCategory,
-      },
     };
   }
 
@@ -154,8 +143,10 @@ export class CandidateDiscovery {
       return buildCandidate({
         reference,
         source,
-        equivalence: record ? resolveEquivalence(record, strength ?? null) : null,
-        reportedShortage: shortages.get(product.product_ndc) ?? null,
+        equivalence: record
+          ? resolveEquivalence(record, strength ?? null, source.ingredients.length)
+          : null,
+        reportedShortage: shortages.byNdc.get(product.product_ndc) ?? null,
         asOf,
       });
     });
@@ -165,15 +156,10 @@ export class CandidateDiscovery {
       ingredient: reference.ingredient,
       referenceNdc: reference.productNdc,
       referenceLabel: reference.label,
-      candidates: rankCandidates(candidates),
-      coverage: {
-        reportedTotal: products.length,
-        retrieved: products.length,
-        truncated: products.length >= CANDIDATE_LIMIT,
-        equivalenceChecked: approvals.found.size,
-      },
+      candidates: rankCandidates(flagDuplicateCandidates(candidates)),
+      coverage: candidateCoverage(listings, approvals.found.size),
       sources,
-      limits: limitsFor({ products, approvals, reference }),
+      limits: discoveryLimits(listings, reference, approvals, shortages.truncated),
     };
   }
 
@@ -217,33 +203,24 @@ export class CandidateDiscovery {
   private async shortages(
     reference: CandidateReference,
     sources: Provenance[],
-  ): Promise<Map<string, NonNullable<ProductCandidate['reportedShortage']>>> {
+  ): Promise<{
+    byNdc: Map<string, NonNullable<ProductCandidate['reportedShortage']>>;
+    truncated: boolean;
+  }> {
     const response = await this.fda.searchShortages({
       search: `openfda.substance_name:"${quote(reference.ingredient)}"`,
       limit: SHORTAGE_LIMIT,
     });
     sources.push(response.provenance);
-    const byNdc = new Map<string, NonNullable<ProductCandidate['reportedShortage']>>();
-    for (const row of response.data) {
-      const entry = toShortage(row);
-      if (entry === null) continue;
-      for (const ndc of row.openfda?.product_ndc ?? []) byNdc.set(ndc, entry);
-    }
-    return byNdc;
+    const byNdc = shortageEvidenceByNdc(response.data, response.provenance.fetched_at);
+    return {
+      byNdc,
+      truncated:
+        response.total === null
+          ? response.data.length >= SHORTAGE_LIMIT
+          : response.total > response.data.length,
+    };
   }
-}
-
-/** A shortage row only counts when FDA stated both a status and a date for it. */
-function toShortage(row: {
-  status?: string | undefined;
-  availability?: string | undefined;
-  update_date?: string | undefined;
-  change_date?: string | undefined;
-  initial_posting_date?: string | undefined;
-}): NonNullable<ProductCandidate['reportedShortage']> | null {
-  const at = row.update_date ?? row.change_date ?? row.initial_posting_date;
-  if (row.status === undefined || at === undefined) return null;
-  return { status: row.status, availability: row.availability ?? null, updatedAt: at };
 }
 
 function toApproval(record: {
@@ -280,18 +257,15 @@ function limitsFor(input: {
   const { products, approvals, reference } = input;
   const withoutApplication = products.filter((one) => one.application_number === undefined).length;
   const limits = [
+    ...(reference.limits ?? []),
     'Candidates are FDA product listings. A listing is not evidence of stock, a supplier offer, or a price.',
     'This is US regulatory evidence. It does not establish availability in India or any other market.',
+    'A product NDC shortage association can span presentations. Mixed source statuses remain mixed; conflicting or missing availability remains unknown. Missing, invalid or future-dated status rows are not joined. No matched row does not establish stock.',
     'A shared active ingredient is not therapeutic equivalence. Only an FDA-published TE code speaks to that, and only for the approved product.',
   ];
-  if (reference.productNdc === null) {
+  if (reference.ingredientNames.length > 1) {
     limits.push(
-      'The source record reports no product NDC, so there is no baseline listing to compare strength, dosage form or route against. Those attributes are reported as unknown.',
-    );
-  }
-  if (products.length >= CANDIDATE_LIMIT) {
-    limits.push(
-      `Retrieval stopped at ${String(CANDIDATE_LIMIT)} listings. More products may exist for this ingredient.`,
+      'Combination-product strength and equivalence evidence are withheld until every ingredient can be matched to the approved presentation.',
     );
   }
   if (withoutApplication > 0) {
@@ -311,4 +285,48 @@ function limitsFor(input: {
     );
   }
   return limits;
+}
+
+function candidateCoverage(
+  listings: FdaPage<NdcProduct>,
+  checked: number,
+): CandidateSet['coverage'] {
+  return {
+    reportedTotal: listings.total,
+    retrieved: listings.data.length,
+    truncated:
+      listings.total === null
+        ? listings.data.length >= CANDIDATE_LIMIT
+        : listings.total > listings.data.length,
+    equivalenceChecked: checked,
+  };
+}
+
+function discoveryLimits(
+  listings: FdaPage<NdcProduct>,
+  reference: CandidateReference,
+  approvals: Parameters<typeof limitsFor>[0]['approvals'],
+  shortageTruncated: boolean,
+): string[] {
+  return [
+    ...limitsFor({ products: listings.data, approvals, reference }),
+    ...(candidateCoverage(listings, approvals.found.size).truncated
+      ? [
+          `Retrieval is incomplete after ${String(listings.data.length)} listings. More products may exist for this ingredient.`,
+        ]
+      : []),
+    ...(shortageTruncated
+      ? ['Shortage retrieval is incomplete; an absent match does not mean there is no shortage.']
+      : []),
+    ...listings.data
+      .filter(
+        (p) =>
+          p.listing_expiration_date !== undefined &&
+          parseFdaDate(p.listing_expiration_date) === null,
+      )
+      .map(
+        (p) =>
+          `Listing ${p.product_ndc} has an unreadable expiration date; listing currency is unknown.`,
+      ),
+  ];
 }

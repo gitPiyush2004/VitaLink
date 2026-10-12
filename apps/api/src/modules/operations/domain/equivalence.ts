@@ -17,7 +17,7 @@ export const TE_CODE_ABSENT_NOTE =
   'FDA publishes no therapeutic equivalence code for this approved product. That is an absence of evidence, not a finding of non-equivalence.';
 
 export const TE_CODE_AMBIGUOUS_NOTE =
-  'This approval covers several products and the printed strengths did not identify which one this listing is. The equivalence code is withheld rather than guessed.';
+  'The available presentation evidence does not identify a matching approved product. The equivalence code is withheld rather than guessed.';
 
 export const TE_CODE_CONFLICT_NOTE =
   'Several approved products share this strength and FDA does not publish the same equivalence code for all of them. The code is withheld because the evidence disagrees.';
@@ -62,7 +62,15 @@ type ApprovalProduct = ApprovalRecord['products'][number];
  * listing could not be placed within the application at all.
  */
 function selectProducts(record: ApprovalRecord, strength: string | null): ApprovalProduct[] {
-  if (record.products.length <= 1) return record.products;
+  if (record.products.length <= 1) {
+    const only = record.products[0];
+    const contradicted =
+      strength !== null &&
+      only !== undefined &&
+      only.strengths.length > 0 &&
+      only.strengths.every((one) => compareStrength(strength, one) === 'differs');
+    return contradicted ? [] : record.products;
+  }
   if (strength === null) return [];
   return record.products.filter((product) =>
     product.strengths.some((one) => compareStrength(strength, one) === 'same'),
@@ -83,13 +91,20 @@ function teCodeOf(matched: ApprovalProduct[]): Pick<CandidateEquivalence, 'teCod
 export function resolveEquivalence(
   record: ApprovalRecord,
   strength: string | null,
+  ingredientCount = 1,
 ): CandidateEquivalence {
-  const matched = selectProducts(record, strength);
+  const matched = ingredientCount === 1 ? selectProducts(record, strength) : [];
   const status = agreed(matched.map((one) => one.marketingStatus));
   return {
     applicationNumber: record.applicationNumber,
     sponsor: record.sponsor,
     ...teCodeOf(matched),
+    ...(ingredientCount !== 1
+      ? {
+          teCodeNote:
+            'Combination-product approval matching requires every active ingredient and strength; the equivalence code is withheld.',
+        }
+      : {}),
     // A conflicting marketing status is withheld for the same reason as a
     // conflicting code: reporting one of several disagreeing values as the
     // answer would be a fabrication.

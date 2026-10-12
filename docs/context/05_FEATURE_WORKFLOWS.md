@@ -10,7 +10,7 @@ The browser's `Workspace.tsx`, `MonitorRail.tsx`, `Globe.tsx` and `SourcePanel.t
 
 Operations routes/controllers validate and authorise creation. `operations.service.ts` saves the source snapshot through the repository. Investigations and watches belong to the authenticated organisation. A case begins with evidence rather than invented inventory.
 
-`InvestigationPanel.tsx` connects Evidence, Analysis, Trace, Logistics, Response and Record. Notes, selected response and status updates preserve history; stale `updatedAt` writes are rejected instead of silently overwriting another edit. Export downloads the case's evidence record.
+`InvestigationPanel.tsx` connects Evidence, Analysis, Candidates, History, Decision and Report; trace/logistics/response forms are nested under Optional tools. Notes, selected response and status updates preserve history; stale `updatedAt` writes are rejected instead of silently overwriting another edit. Export downloads the case's evidence record.
 
 ## 3. Analyse the related medicine
 
@@ -24,7 +24,7 @@ Reanalysis invalidates the prior trace, recommendations and response plan becaus
 
 `operations.candidates.ts` builds a baseline from the incident's own product NDC, then queries openFDA by that listing's active ingredient. `domain/candidates.ts` produces one verdict per attribute; `domain/strength.ts` compares printed strengths as normalised concentrations; `domain/equivalence.ts` resolves a Drugs@FDA approval onto the listing and withholds a therapeutic-equivalence code when the matching approved products disagree.
 
-`CandidatesPanel.tsx` draws each candidate as five coloured segments — match, differs, not stated — so the comparison is readable before any prose, with the justifying notes folded into the expanded row. Excluded listings remain visible with their reason.
+`CandidatesPanel.tsx` draws each candidate as five coloured segments — match, differs, unknown — so the comparison is readable before any prose, with the justifying notes folded into the expanded row. Excluded listings remain visible with their reason.
 
 Reanalysing a medicine clears the candidate set, because it was computed against the previous medicine context.
 
@@ -46,10 +46,20 @@ In the exercised configuration all six actual carriers returned unavailable. [Cu
 
 `domain/response-plan.ts` compares operator-supplied options against a do-nothing baseline. Arrival timing matters: a late shipment cannot erase a gap before it arrives. Cost and uncovered-day comparisons preserve the underlying input provenance and identify Pareto trade-offs.
 
-An analyst can select a response and record why. Marking a case ACTIONED requires a selected response; it records a decision, not a dispatched shipment or purchase. Real offers can be entered when available. Student acceptance assumptions must remain labelled SCENARIO.
+An analyst can select a response and record why. Marking a case ACTIONED requires a recorded public-evidence next action or a selected legacy response option; it records a decision, not a dispatched shipment or purchase. Real offers can be entered when available. Student acceptance assumptions must remain labelled SCENARIO.
 
 ## 7. Review news separately
 
 `NewsPanel.tsx` exposes the existing signals pipeline: ingest → cluster → entity resolution → independence/corroboration → veracity → publish or quarantine. A conditional trace and an official FDA record are not relabelled as independently corroborated news alerts. No LLM narrative service is wired into this flow.
 
 Use the [file index](FILE_INDEX.md) to follow each named file and its static dependencies. See [data and evidence](04_DATA_AND_EVIDENCE.md) for source-specific interpretation.
+
+## 8. Inspect source history and export the investigation
+
+Live history uses immutable source fact versions; fetch times and city geocoding alone do not create regulatory changes. Initial migration can include corrected legacy date normalization, which is disclosed. Original opening evidence remains fixed. Monitor pruning preserves versions and saved cases; source absence is not resolution.
+
+Run `npm run history:import -- /path/to/verified/collection` to validate original bodies/manifest alignment and explicitly import normalized archive observations. The archive panel reports capture/fetch times, exact printed-name scope, original URLs/body hashes, parser repairs and date-quality warnings. It does not infer NDC identity from a name.
+
+The Decision section records monitor, investigate candidate or escalate intent without requiring stock/offer scenarios. Candidate selection requires exactly one non-excluded saved NDC listing. Reanalysis and rediscovery clear old decisions; changing a selected response invalidates rationale tied to the previous response. Case audit records these writes.
+
+The Report section loads organisation-scoped evidence, latest monitor facts, live versions, archive associations, sources, candidate reasoning and the saved decision. The HTML is script-free with escaped source/analyst strings and only HTTP(S) links. The selected candidate is expanded; other detailed comparisons can be opened before printing. Companion JSON retains all source rows and comparison facts. Export is a reviewable investigation artifact, not an operational transaction.

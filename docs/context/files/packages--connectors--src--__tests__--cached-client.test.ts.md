@@ -37,23 +37,24 @@ No direct source-import consumers found; entry points, scripts, HTTP calls and d
 ## Named test cases and groups
 
 - CachedHttpClient.getJson ([line 68](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L68)).
-- returns the parsed body with provenance attached ([line 69](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L69)).
-- serves the second identical request from cache without a network call ([line 88](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L88)).
-- refetches an invalid cached body and replaces it only after validation ([line 103](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L103)).
-- reports the original fetch time on a cache hit, not the time of the hit ([line 130](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L130)).
-- treats a different URL as a different cache entry ([line 150](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L150)).
-- retries a 503 and succeeds on the second attempt ([line 170](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L170)).
-- does not retry a 404, and reports it as not_found ([line 187](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L187)).
-- gives up after the retry budget and reports rate_limited ([line 201](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L201)).
-- reports a body that does not match the schema as malformed_response ([line 215](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L215)).
-- reports a non-JSON body as malformed_response ([line 230](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L230)).
-- does not cache a failed response ([line 241](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L241)).
-- keeps the raw body, so a carrier quote can be proved later ([line 260](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L260)).
+- retains legacy cache identities for ordinary requests ([line 69](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L69)).
+- returns the parsed body with provenance attached ([line 91](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L91)).
+- serves the second identical request from cache without a network call ([line 110](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L110)).
+- refetches an invalid cached body and replaces it only after validation ([line 125](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L125)).
+- reports the original fetch time on a cache hit, not the time of the hit ([line 152](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L152)).
+- treats a different URL as a different cache entry ([line 172](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L172)).
+- retries a 503 and succeeds on the second attempt ([line 192](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L192)).
+- does not retry a 404, and reports it as not_found ([line 209](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L209)).
+- gives up after the retry budget and reports rate_limited ([line 223](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L223)).
+- reports a body that does not match the schema as malformed_response ([line 237](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L237)).
+- reports a non-JSON body as malformed_response ([line 252](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L252)).
+- does not cache a failed response ([line 263](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L263)).
+- keeps the raw body, so a carrier quote can be proved later ([line 282](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/connectors/src/__tests__/cached-client.test.ts#L282)).
 
 ## Maintenance and verification
 
 Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
 
-Source SHA-256: `982db64fe30b7d2f1b27e24a3f4a3ae4e638f29e5165536bd2a2f1b1d4eafdfe`.
+Source SHA-256: `3fea15db546625496bb8428963aa79cb7580a453dfff85dc91ecf8bed19283b2`.
 
 Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

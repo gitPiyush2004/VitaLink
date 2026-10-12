@@ -24,7 +24,10 @@ export default defineConfig({
     // The API is called through this proxy in development, so the browser makes
     // same-origin requests and the refresh cookie's SameSite=Strict still works.
     proxy: {
-      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/api': {
+        target: process.env['VITALINK_API_PROXY_TARGET'] ?? 'http://localhost:4000',
+        changeOrigin: true,
+      },
     },
   },
 });

@@ -1,14 +1,14 @@
 # Vitalink
 
-A medicine supply investigation workspace for procurement and supply-chain
-analysts working with FDA-regulated products. Watch actual shortage presentations
-and recalls, preserve their scope, identify related medicines, trace a stated
-upstream disruption, compare response options, and record the decision.
+A public-evidence medicine supply investigation workspace for analysts working
+with FDA-regulated products. Start from an actual shortage or recall, preserve its
+scope, identify the medicine, compare listed candidates, inspect source history,
+and record a justified next action in a readable report.
 
-The operations workspace connects the existing signal, graph, reliability and
-carrier engines. It distinguishes official source evidence, derived relationships,
-model outputs and operator assumptions. Inventory and supplier offers come from
-the operator; the application does not infer them from public records.
+This Phase 1 workflow runs without supplier accounts or fictional hospital stock.
+Public source facts, derived relationships, model outputs and optional operator
+scenarios remain distinguishable. A listing is not stock; the saved action is
+investigation intent, not an order or a clinical substitution.
 
 The globe and layered panels take visual inspiration from
 [God’s Eye View](https://github.com/bilawalsidhu/gods-eye-view). Map points identify
@@ -21,7 +21,7 @@ versionable file outside that vault, with source declarations, dependencies,
 consumers and fingerprints. Open `docs/context` as an Obsidian vault or read the
 same notes on GitHub. The overview was authored through the official Obsidian CLI.
 
-The review is the final review of **academic Phase 1**. Alternative-product
+The review is the final review of **academic Phase 1**. The completed scope, dated acceptance results and remaining human/production limits are in [Phase 1 readiness](docs/context/14_PHASE1_REVIEW_READINESS.md). Alternative-product
 discovery is built and runs against live openFDA. Public cost benchmarks and
 road-route exposure comparison remain
 [proposed additions](docs/context/06_REVIEW_AND_ROADMAP.md), not completed features.
@@ -286,3 +286,33 @@ scripts/     the five CI gates, and the source probe
 After changing source or authored context, run `npm run docs:context`, then
 `npm run docs:context:check`. CI checks coverage, fingerprints and local note links;
 it does not require the Obsidian desktop app.
+
+## Review evidence and archive history
+
+The investigation sections are Evidence, Analysis, Candidates, History, Decision
+and Report, with scenario tools optional. The Report section downloads script-free
+HTML and full evidence JSON. The selected candidate is expanded; other comparisons
+can be opened before printing. No supplier or inventory input is needed to record
+monitoring, a candidate follow-up or professional-review intent.
+
+Live source history begins with retained observations and preserves case-opening
+facts. Verified historical FDA CSV captures can be explicitly imported:
+
+```sh
+npm run history:collect -- data/history/my-run 2019-01 2026-10 96
+npm run history:replay -- data/history/my-run
+npm run history:import -- data/history/my-run
+```
+
+The importer verifies original response hashes and manifest/capture alignment;
+identical reimports are idempotent, incompatible interpretations are rejected.
+The app associates exact printed medicine names across companies/presentations,
+which does not establish a selected NDC's historical identity. Missing periods,
+parser repairs and suspicious source dates remain disclosed. See the [history
+pipeline](scripts/history/README.md).
+
+The dated Phase 1 technical audit contains 30 purposive raw-source comparison
+annotations and a blank independent-review packet. It is not a clinical or
+representative accuracy study. A frozen temporal persistence experiment is also
+implemented; its majority-class performance and zero resolution recall do not
+justify a deployed shortage prediction. See [the evaluation](docs/context/13_PERSISTENCE_EVALUATION.md).

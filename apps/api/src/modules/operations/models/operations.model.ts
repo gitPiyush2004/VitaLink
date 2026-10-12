@@ -9,6 +9,7 @@ export type SnapshotDoc = {
   payload: unknown;
   changed_at: Date;
   digest?: string;
+  versioned?: boolean;
 };
 function snapshotSchema(collection: string): Schema<SnapshotDoc> {
   const schema = new Schema<SnapshotDoc>(
@@ -18,10 +19,14 @@ function snapshotSchema(collection: string): Schema<SnapshotDoc> {
       payload: { type: Schema.Types.Mixed, required: true },
       changed_at: { type: Date, required: true },
       digest: { type: String },
+      versioned: { type: Boolean },
     },
     { collection, strict: 'throw', _id: false },
   );
   schema.index({ org_id: 1, changed_at: -1 });
+  if (collection === 'operational_incident_versions') {
+    schema.index({ org_id: 1, 'payload.incidentId': 1, 'payload.observedAt': -1, _id: 1 });
+  }
   if (collection === 'operational_incidents') {
     schema.index({ org_id: 1, 'payload.publishedAt': -1, _id: 1 });
   }
@@ -37,3 +42,8 @@ export const InvestigationModel = model<SnapshotDoc>(
   snapshotSchema('investigations'),
 );
 export const WatchModel = model<SnapshotDoc>('Watch', snapshotSchema('watches'));
+
+export const IncidentVersionModel = model<SnapshotDoc>(
+  'IncidentVersion',
+  snapshotSchema('operational_incident_versions'),
+);

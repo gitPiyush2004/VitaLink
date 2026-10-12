@@ -2,6 +2,7 @@
 import { z } from 'zod';
 
 import { graphEdgeSchema, graphNodeSchema } from './graph';
+import { medicineArchiveSchema } from './operational-archive';
 import { provenanceSchema, quantitySchema } from './provenance';
 import { drugReliabilitySchema } from './reliability';
 
@@ -37,6 +38,25 @@ export const incidentSchema = z.object({
     .nullable(),
 });
 export type Incident = z.infer<typeof incidentSchema>;
+
+export const incidentVersionSchema = z.object({
+  id: z.string(),
+  incidentId: z.string(),
+  digest: z.string().regex(/^[a-f0-9]{64}$/),
+  observedAt: z.iso.datetime(),
+  recordedAt: z.iso.datetime(),
+  origin: z.enum(['live_refresh', 'retained_before_tracking']),
+  snapshot: incidentSchema,
+});
+export type IncidentVersion = z.infer<typeof incidentVersionSchema>;
+export const incidentHistorySchema = z.object({
+  incidentId: z.string(),
+  versions: z.array(incidentVersionSchema),
+  hasMore: z.boolean(),
+  latest: incidentSchema.nullable(),
+  coverage: z.string(),
+});
+export type IncidentHistory = z.infer<typeof incidentHistorySchema>;
 
 export const feedStatusSchema = z.object({
   id: z.string(),
@@ -146,7 +166,7 @@ export const candidateSetSchema = z.object({
   /** Every candidate retrieved, excluded ones included and flagged. */
   candidates: z.array(productCandidateSchema),
   coverage: z.object({
-    reportedTotal: z.number().int(),
+    reportedTotal: z.number().int().nullable(),
     retrieved: z.number().int(),
     truncated: z.boolean(),
     equivalenceChecked: z.number().int(),
@@ -163,6 +183,7 @@ const MAX_OPTIONS = 12;
 const MAX_WATCH_LENGTH = 120;
 const MIN_WATCH_LENGTH = 2;
 const MAX_DAYS = 365;
+const MAX_RATIONALE_LENGTH = 4000;
 const MAX_COST = 1_000_000_000;
 export const responseOptionSchema = z
   .object({
@@ -223,6 +244,27 @@ export const responsePlanSchema = z.object({
 });
 export type ResponsePlan = z.infer<typeof responsePlanSchema>;
 
+export const investigationDecisionInputSchema = z
+  .object({
+    action: z.enum(['monitor', 'investigate_candidate', 'escalate', 'documented_response']),
+    rationale: z.string().trim().min(MIN_BASIS_LENGTH).max(MAX_RATIONALE_LENGTH),
+    candidateNdc: z.string().min(1).max(MAX_LABEL_LENGTH).nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.action === 'investigate_candidate') !== (value.candidateNdc !== null)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Only a candidate-investigation action requires a product NDC.',
+        path: ['candidateNdc'],
+      });
+    }
+  });
+export type InvestigationDecisionInput = z.infer<typeof investigationDecisionInputSchema>;
+export const investigationDecisionSchema = investigationDecisionInputSchema.safeExtend({
+  recordedAt: z.iso.datetime(),
+  author: z.string(),
+});
+
 export const investigationSchema = z.object({
   id: z.string(),
   incidentId: z.string(),
@@ -236,12 +278,22 @@ export const investigationSchema = z.object({
   analysis: analysisSchema.nullable(),
   candidates: candidateSetSchema.nullable().default(null),
   plan: responsePlanSchema.nullable(),
+  decision: investigationDecisionSchema.nullable().default(null),
   notes: z.array(
     z.object({ id: z.string(), at: z.string(), author: z.string(), text: z.string() }),
   ),
   history: z.array(z.object({ at: z.string(), action: z.string(), author: z.string() })),
 });
 export type Investigation = z.infer<typeof investigationSchema>;
+
+export const investigationReportSchema = z.object({
+  generatedAt: z.iso.datetime(),
+  investigation: investigationSchema,
+  sourceHistory: incidentHistorySchema,
+  archive: medicineArchiveSchema,
+  feeds: z.array(feedStatusSchema),
+});
+export type InvestigationReport = z.infer<typeof investigationReportSchema>;
 
 export const watchSchema = z.object({
   id: z.string(),

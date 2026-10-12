@@ -18,7 +18,7 @@ The main constraint is **what the evidence can establish**, not whether an API c
 
 The FDA's national shortage status and a presentation's availability are separate fields. A Current shortage can include Available presentations. Unknown information stays unknown. Recall matching by product NDC still requires the reported lot scope; generic or company matching is an association for investigation, not direct recall applicability.
 
-The feed caps are 300 recent recall reports and 1,000 current shortage presentations. Deduplication retains stable identities and the newest version. Partial retrieval or errors must remain visible in source health. Catalogue and model inputs have their own coverage limits; a capped recall window cannot be called a complete failure history.
+The feed caps are 300 recent recall reports and 2,000 published shortage presentations across source statuses. Deduplication retains stable identities and the newest version. Partial retrieval or errors must remain visible in source health. Catalogue and model inputs have their own coverage limits; a capped recall window cannot be called a complete failure history.
 
 Two FDA endpoints are one originating authority. News verification checks independence by agency/domain instead of counting URLs. A corroboration request that fails or is rate limited is **not attempted**, which is different from a successful search with no support. Official regulatory evidence appears separately from corroborated news alerts.
 
@@ -34,7 +34,11 @@ Implemented against live openFDA. Candidates are retrieved by active ingredient 
 
 Strength is compared as a normalised concentration rather than as text or as a bare number: `5000 [USP'U]/mL` and `5,000 UNITS/100mL` print the same figure and differ by a hundredfold. Unreadable or incommensurable strengths return `unknown`, never `match`. USP Units and International Units are held in separate families; unqualified "UNITS" is read as a USP unit only because comparison happens within one active ingredient.
 
-Approval and therapeutic-equivalence evidence comes from Drugs@FDA rather than the Orange Book, whose equivalent codes are published only as a downloadable archive that gate 2 would reject. Where an application covers several approved products the code is resolved only when the products matching the listing's strength agree. A matching ingredient alone is insufficient for a substitution claim, and the absence of a TE code is never displayed as non-equivalence.
+Approval and therapeutic-equivalence evidence currently comes from Drugs@FDA; direct Orange Book download ingestion is not integrated. Original public-source evidence is distinct from a fabricated runtime fixture. Where an application covers several approved products the code is resolved only when the products matching the listing's strength agree. A matching ingredient alone is insufficient for a substitution claim, and the absence of a TE code is never displayed as non-equivalence.
+
+An incident listing is used as the baseline only when the selected generic name identifies exactly one retrieved incident NDC. Ambiguous or incomplete lookup preserves unknown attributes. Strict calendar parsing checks listing expiry through its stated UTC day. Per-dose mass (`mg/1`) is supported, while combination strengths and equivalence are withheld until every ingredient can be aligned. Source totals are retained separately from page lengths.
+
+The four-group live freeze and 30-case assistant technical review are documented in [the audit](11_CANDIDATE_AND_FORECAST_AUDIT.md); independent matching validation remains outstanding. Drugs@FDA resolution still uses strength rather than a complete form/route/release identity, and independent approval/shortage-join relevance review remains outstanding. Runtime shortage joins now preserve mixed statuses and unknown availability rather than using the last response row. Invalid/future source dates are withheld.
 
 DailyMed remains a possible addition for release characteristics, which no current source supplies.
 
@@ -45,3 +49,11 @@ CMS NADAC could supply dated acquisition-cost benchmarks for covered products; i
 `eval/audit.ts` calculates coverage and source fingerprints from frozen public snapshots without network calls. The dated local snapshot contained 1,298 unique incidents. Store snapshot dates and hashes alongside any results. Coverage metrics count populated identifiers, lots, dates and geography; they do not measure prediction accuracy.
 
 Secrets, accounts and private cases do not belong in a public snapshot. Runtime databases and generated local login files are outside the versioned repository. For reproducibility commands, see [setup and validation](07_LOCAL_SETUP_AND_VALIDATION.md).
+
+## Archived observations
+
+The [historical-data layer](12_HISTORICAL_DATA_LAYER.md) preserves original FDA CSV response text and distinguishes archive capture time from later retrieval time and source-printed dates. Its dated collection has 47 usable monthly-selected snapshots with major gaps, conflicts and flagged source-date typos. Those are observations, not a complete episode series or non-shortage cohort. Missing records and periods stay unknown. Offline replay validates hashes, provenance and normalized interpretations. The live monitor is separately capped at 2,000 shortage rows across published statuses. Verified archives can be explicitly imported into the app; the History view associates exact printed medicine names across companies and presentations and does not establish the selected NDC’s history.
+
+## Conditional persistence experiment
+
+The [frozen baseline evaluation](13_PERSISTENCE_EVALUATION.md) uses source captures available before 2021 for training and later observations for validation/test. It retains missing outcomes, purges split boundaries and measures probability error. Labels are conditional on a usable next observation 14–60 days later, not an eligible new-shortage product cohort or exact 30-day outcome. Source dates flagged after capture are excluded; source initial-posting dates are not episode-age features. High majority accuracy does not identify resolution: the simple baselines recall zero Resolved outcomes at a 0.5 threshold. This research is separate from runtime reliability/proxy calculations and is not an operational forecast.

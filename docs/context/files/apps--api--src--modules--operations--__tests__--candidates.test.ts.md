@@ -39,23 +39,25 @@ No direct source-import consumers found; entry points, scripts, HTTP calls and d
 - matches every attribute on an equivalent listing ([line 59](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L59)).
 - reports a different concentration rather than matching on the printed number ([line 65](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L65)).
 - calls an unreadable strength unknown, never a match ([line 72](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L72)).
-- flags a combination product as carrying extra active ingredients ([line 77](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L77)).
-- does not treat differently spelled dosage forms as equal ([line 92](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L92)).
-- separates a partial route overlap from no overlap ([line 96](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L96)).
-- does not exclude on route when a listing states none ([line 104](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L104)).
-- hard exclusions ([line 111](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L111)).
-- excludes the investigated product itself ([line 112](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L112)).
-- excludes bulk ingredient listings ([line 118](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L118)).
-- excludes an expired listing but keeps a future one ([line 124](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L124)).
-- excludes a discontinued approved product ([line 129](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L129)).
-- ranking ([line 144](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L144)).
-- sinks excluded products and prefers confirmed matches over absent evidence ([line 145](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L145)).
-- is a pure function of its input ([line 157](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L157)).
+- does not claim complete strength agreement from one ingredient of a combination ([line 77](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L77)).
+- flags a combination product as carrying extra active ingredients ([line 95](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L95)).
+- does not treat differently spelled dosage forms as equal ([line 110](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L110)).
+- separates a partial route overlap from no overlap ([line 114](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L114)).
+- does not exclude on route when a listing states none ([line 122](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L122)).
+- hard exclusions ([line 129](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L129)).
+- excludes the investigated product itself ([line 130](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L130)).
+- excludes bulk ingredient listings ([line 136](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L136)).
+- excludes an expired listing but keeps a future one ([line 142](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L142)).
+- handles compact dates, expiry-day boundaries, and invalid calendar dates ([line 147](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L147)).
+- excludes a discontinued approved product ([line 154](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L154)).
+- ranking ([line 169](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L169)).
+- sinks excluded products and prefers confirmed matches over absent evidence ([line 170](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L170)).
+- is a pure function of its input ([line 182](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/__tests__/candidates.test.ts#L182)).
 
 ## Maintenance and verification
 
 Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
 
-Source SHA-256: `d17030bb0850dc233ad723e2b672c0434053d253576502466e4a71da0c2e32c4`.
+Source SHA-256: `001801b39e6667da522e3777fbf21e7976caceb3e1d5f9f287708069141e38e0`.
 
 Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

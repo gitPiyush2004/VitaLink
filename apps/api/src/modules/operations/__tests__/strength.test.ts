@@ -38,6 +38,13 @@ describe('compareStrength', () => {
     expect(compareStrength('1 mg/mL', '1000 mcg/mL')).toBe('same');
   });
 
+  it('compares explicit NDC dosage-unit strengths without treating them as volume', () => {
+    expect(compareStrength('500 mg/1', '0.5 g/1')).toBe('same');
+    expect(compareStrength('500 mg/1', '250 mg/1')).toBe('differs');
+    expect(compareStrength('500 mg/1', '500 mg/mL')).toBe('unknown');
+    expect(compareStrength('500 mg/1', '500 mg')).toBe('differs');
+  });
+
   it('separates an absolute amount from a concentration', () => {
     expect(compareStrength('500 mg', '500 mg/mL')).toBe('differs');
   });

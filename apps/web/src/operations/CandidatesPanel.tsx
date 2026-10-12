@@ -47,7 +47,9 @@ function Row({
         <span className="cx-maker">{candidate.labeler ?? '—'}</span>
         <span className="cx-flags">
           {te !== null && <b className="cx-te">{te}</b>}
-          {candidate.reportedShortage && <i className="cx-pulse" title="FDA reports a shortage" />}
+          {candidate.reportedShortage && (
+            <i className="cx-pulse" title="FDA reported presentation status; inspect details" />
+          )}
           {excluded && <b className="cx-ex">EXCLUDED</b>}
         </span>
       </button>
@@ -155,14 +157,17 @@ export function CandidatesPanel({
       <div className="cx-baseline">
         <span className="cx-baseline-tag">BASELINE</span>
         <h4>{set.referenceLabel}</h4>
-        <span className="cx-baseline-ndc">{set.referenceNdc ?? 'no NDC reported'}</span>
+        <span className="cx-baseline-ndc">{set.referenceNdc ?? 'no unambiguous baseline NDC'}</span>
       </div>
 
       <div className="cx-count">
         <strong>{viable}</strong>
         <span>
           of {set.candidates.length} listings carry no disqualifying exclusion
-          {set.coverage.truncated ? ' · more exist beyond the retrieval limit' : ''}
+          {set.coverage.reportedTotal === null
+            ? ' · FDA total unavailable'
+            : ` · FDA reports ${String(set.coverage.reportedTotal)} listings for this query`}
+          {set.coverage.truncated ? ' · retrieval is incomplete' : ''}
         </span>
       </div>
 
@@ -175,7 +180,7 @@ export function CandidatesPanel({
               setFilter(one);
             }}
           >
-            {one} <b>{counts[one]}</b>
+            {one === 'viable' ? 'not excluded' : one} <b>{counts[one]}</b>
           </button>
         ))}
         <button className="cx-refresh" disabled={busy} onClick={refresh}>
@@ -194,19 +199,20 @@ export function CandidatesPanel({
         </span>
         <span>
           <i className="cx-seg unknown" />
-          not stated
+          unknown
         </span>
         <span className="cx-legend-order">ingredients · strength · form · route · category</span>
       </div>
 
       <ul className="cx-list">
-        {rows.map((candidate) => (
+        {rows.map((candidate, index) => (
           <Row
-            key={candidate.productNdc}
+            key={`${candidate.productNdc}:${String(index)}`}
             candidate={candidate}
-            open={open === candidate.productNdc}
+            open={open === `${candidate.productNdc}:${String(index)}`}
             onToggle={() => {
-              setOpen(open === candidate.productNdc ? null : candidate.productNdc);
+              const key = `${candidate.productNdc}:${String(index)}`;
+              setOpen(open === key ? null : key);
             }}
           />
         ))}

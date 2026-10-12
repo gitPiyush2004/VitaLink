@@ -9,6 +9,8 @@ Read [the context entry point](docs/context/00_START_HERE.md), especially curren
 - Retain REAL/DERIVED/MODELLED/SCENARIO provenance. Labeler associations do not prove API suppliers or plants. Recall applicability remains limited by identifiers and lots.
 - Keep mock carrier mode off for real-data operation. Five carrier adapters are unavailable stubs; DSV quote mapping is unverified. Environment fields alone do not complete integrations.
 - Candidate discovery is built. A candidate is a product worth investigating, never a substitution recommendation: keep the per-attribute `match`/`differs`/`unknown` verdicts, never introduce an aggregate score, and never render an absent therapeutic-equivalence code as non-equivalence. Compare strengths as normalised concentrations; an unreadable strength is `unknown`, not a match.
+- Live fact versions, original archive evidence and case-opening snapshots are distinct. Never overwrite immutable evidence or infer resolution from disappearance. Archive views are exact printed-name associations across companies/presentations, not verified NDC history. Preserve parser/capture/fetch diagnostics.
+- Public-evidence next actions record intent without requiring stock or supplier offers. Duplicate-NDC candidates require identity verification; mixed source presentation statuses and unknown availability remain explicit.
 - Cost benchmarks and route-exposure comparison are proposed additions, not completed workflows. Do not predict delays without applicable evidence and validation.
 
 ## Implementation conventions

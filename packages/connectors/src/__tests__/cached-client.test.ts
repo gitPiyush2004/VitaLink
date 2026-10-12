@@ -66,6 +66,28 @@ afterEach(() => {
 });
 
 describe('CachedHttpClient.getJson', () => {
+  it('retains legacy cache identities for ordinary requests', async () => {
+    const cache = createMemoryCache();
+    await cache.set(
+      'http:openfda_ndc:0e2b45b4ce86c56761e86eec92ffa2ba',
+      JSON.stringify({
+        body: '{"value":42}',
+        provenance: {
+          source_name: 'openFDA',
+          source_url: request().url,
+          query: 'test',
+          fetched_at: '2026-09-01T12:00:00.000Z',
+        },
+      }),
+      60,
+    );
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const result = await new CachedHttpClient({ cache }).getJson(request(), bodySchema);
+    expect(result.fromCache).toBe(true);
+    expect(result.data.value).toBe(42);
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it('returns the parsed body with provenance attached', async () => {
     scriptFetch([{ status: 200, body: '{"value":42}' }]);
     const client = new CachedHttpClient({

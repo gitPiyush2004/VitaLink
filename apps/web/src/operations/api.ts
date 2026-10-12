@@ -1,4 +1,12 @@
-import type { FeedStatus, Incident, Investigation, Watch } from '@vitalink/contracts';
+import type {
+  FeedStatus,
+  Incident,
+  IncidentHistory,
+  MedicineArchive,
+  Investigation,
+  InvestigationReport,
+  Watch,
+} from '@vitalink/contracts';
 
 import { request } from '../api/client';
 
@@ -11,6 +19,12 @@ export type Dashboard = {
 };
 export const operations = {
   dashboard: () => request<Dashboard>('/operations'),
+  history: (id: string) =>
+    request<IncidentHistory>(`/operations/incidents/${encodeURIComponent(id)}/history`),
+  archive: (id: string) =>
+    request<MedicineArchive>(`/operations/investigations/${encodeURIComponent(id)}/archive`),
+  report: (id: string) =>
+    request<InvestigationReport>(`/operations/investigations/${encodeURIComponent(id)}/report`),
   refresh: () => request('/operations/refresh', { method: 'POST' }),
   create: (incidentId: string) =>
     request<Investigation>('/operations/investigations', { method: 'POST', body: { incidentId } }),

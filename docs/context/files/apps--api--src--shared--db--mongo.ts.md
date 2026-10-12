@@ -34,6 +34,7 @@ Other import specifiers: `mongoose`.
 ## Static consumers
 
 - [apps/api/src/shared/db/index.ts](./apps--api--src--shared--db--index.ts.md)
+- [scripts/history/import-to-app.ts](./scripts--history--import-to-app.ts.md)
 
 ## Maintenance and verification
 

@@ -33,7 +33,7 @@ function source(over: Partial<CandidateSource> = {}): CandidateSource {
     routes: ['INTRAVENOUS', 'SUBCUTANEOUS'],
     marketingCategory: 'ANDA',
     marketingStartDate: '20200715',
-    listingExpiryDate: '2027-12-31',
+    listingExpiryDate: '20271231',
     finished: true,
     ...over,
   };
@@ -71,6 +71,24 @@ describe('attribute comparison', () => {
 
   it('calls an unreadable strength unknown, never a match', () => {
     const candidate = build({ ingredients: [{ name: 'HEPARIN SODIUM', strength: null }] });
+    expect(verdictOf(candidate, 'strength')).toBe('unknown');
+  });
+
+  it('does not claim complete strength agreement from one ingredient of a combination', () => {
+    const combination = { ...reference, ingredientNames: ['HEPARIN SODIUM', 'SODIUM CHLORIDE'] };
+    const candidate = buildCandidate({
+      reference: combination,
+      source: source({
+        ingredients: [
+          { name: 'HEPARIN SODIUM', strength: "5000 [USP'U]/mL" },
+          { name: 'SODIUM CHLORIDE', strength: '9 mg/mL' },
+        ],
+      }),
+      equivalence: null,
+      reportedShortage: null,
+      asOf: AS_OF,
+    });
+    expect(verdictOf(candidate, 'ingredients')).toBe('match');
     expect(verdictOf(candidate, 'strength')).toBe('unknown');
   });
 
@@ -124,6 +142,13 @@ describe('hard exclusions', () => {
   it('excludes an expired listing but keeps a future one', () => {
     expect(build({ listingExpiryDate: '2025-01-31' }).exclusions.join(' ')).toContain('expired');
     expect(build({ listingExpiryDate: null }).exclusions).toEqual([]);
+  });
+
+  it('handles compact dates, expiry-day boundaries, and invalid calendar dates', () => {
+    expect(build({ listingExpiryDate: '20250131' }).exclusions.join(' ')).toContain('expired');
+    expect(build({ listingExpiryDate: '20261012' }).exclusions).toEqual([]);
+    expect(build({ listingExpiryDate: '20260230' }).exclusions).toEqual([]);
+    expect(build({ listingExpiryDate: 'not a date' }).exclusions).toEqual([]);
   });
 
   it('excludes a discontinued approved product', () => {

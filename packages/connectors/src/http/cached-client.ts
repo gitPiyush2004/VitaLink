@@ -49,6 +49,7 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 
 /** Long enough to identify a cache entry, short enough to keep Redis keys tidy. */
 const CACHE_KEY_HASH_LENGTH = 32;
+const CACHE_SEPARATOR = String.fromCharCode(0);
 
 export type CachedHttpClientDeps = {
   cache: ResponseCache;
@@ -70,6 +71,8 @@ export type SourceRequest = {
   cacheTtlSeconds: number;
   headers?: Record<string, string>;
   timeoutMs?: number;
+  /** Exact archive replay must fail on redirects rather than read a nearby capture. */
+  redirect?: 'manual';
   /**
    * Raise the connect timeout for a host with a slow TLS handshake.
    *
@@ -334,6 +337,7 @@ export class CachedHttpClient {
         },
         ...(post === undefined ? {} : { body: post.body.toString() }),
         signal: controller.signal,
+        ...(request.redirect === undefined ? {} : { redirect: request.redirect }),
       };
 
       // Two fetch implementations, and the branch is not gratuitous. Node's
@@ -369,7 +373,9 @@ export class CachedHttpClient {
  */
 function buildCacheKey(request: SourceRequest): string {
   const digest = createHash('sha256')
-    .update(`${request.sourceId} ${request.url}`)
+    .update(
+      `${request.sourceId}${CACHE_SEPARATOR}${request.url}${request.redirect === undefined ? '' : `${CACHE_SEPARATOR}redirect=manual`}`,
+    )
     .digest('hex')
     .slice(0, CACHE_KEY_HASH_LENGTH);
   return `http:${request.sourceId}:${digest}`;

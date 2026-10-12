@@ -41,6 +41,7 @@ Other import specifiers: none.
 - [apps/api/src/modules/logistics/logistics.controller.ts](./apps--api--src--modules--logistics--logistics.controller.ts.md)
 - [apps/api/src/modules/logistics/logistics.repository.ts](./apps--api--src--modules--logistics--logistics.repository.ts.md)
 - [apps/api/src/modules/logistics/logistics.service.ts](./apps--api--src--modules--logistics--logistics.service.ts.md)
+- [apps/api/src/modules/operations/domain/decision.ts](./apps--api--src--modules--operations--domain--decision.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
 - [apps/api/src/modules/operations/operations.controller.ts](./apps--api--src--modules--operations--operations.controller.ts.md)
 - [apps/api/src/modules/operations/operations.service.ts](./apps--api--src--modules--operations--operations.service.ts.md)

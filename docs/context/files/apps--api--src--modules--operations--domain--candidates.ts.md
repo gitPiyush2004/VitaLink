@@ -16,26 +16,28 @@ Contains deterministic domain logic; inspect the named declarations and tests be
 
 ## Source structure
 
-- `CandidateReference` — TypeAliasDeclaration, [line 32](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L32).
-- `CandidateSource` — TypeAliasDeclaration, [line 45](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L45).
-- `set` — FunctionDeclaration, [line 59](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L59).
-- `sameSet` — FunctionDeclaration, [line 63](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L63).
-- `ingredients` — FunctionDeclaration, [line 67](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L67).
-- `strengthOf` — FunctionDeclaration, [line 98](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L98).
-- `strength` — FunctionDeclaration, [line 103](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L103).
-- `dosageForm` — FunctionDeclaration, [line 121](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L121).
-- `sharesRoute` — FunctionDeclaration, [line 152](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L152).
-- `route` — FunctionDeclaration, [line 159](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L159).
-- `marketingCategory` — FunctionDeclaration, [line 187](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L187).
-- `expired` — FunctionDeclaration, [line 213](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L213).
-- `exclusionsFor` — FunctionDeclaration, [line 220](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L220).
-- `buildCandidate` — FunctionDeclaration, [line 246](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L246).
-- `rankCandidates` — FunctionDeclaration, [line 286](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L286).
+- `CandidateReference` — TypeAliasDeclaration, [line 33](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L33).
+- `CandidateSource` — TypeAliasDeclaration, [line 47](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L47).
+- `set` — FunctionDeclaration, [line 61](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L61).
+- `sameSet` — FunctionDeclaration, [line 65](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L65).
+- `ingredients` — FunctionDeclaration, [line 69](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L69).
+- `strengthOf` — FunctionDeclaration, [line 100](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L100).
+- `strength` — FunctionDeclaration, [line 105](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L105).
+- `dosageForm` — FunctionDeclaration, [line 132](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L132).
+- `sharesRoute` — FunctionDeclaration, [line 163](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L163).
+- `route` — FunctionDeclaration, [line 170](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L170).
+- `marketingCategory` — FunctionDeclaration, [line 198](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L198).
+- `ISO_DATE_LENGTH` — binding, [line 224](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L224).
+- `expired` — FunctionDeclaration, [line 226](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L226).
+- `exclusionsFor` — FunctionDeclaration, [line 234](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L234).
+- `buildCandidate` — FunctionDeclaration, [line 260](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L260).
+- `rankCandidates` — FunctionDeclaration, [line 300](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/domain/candidates.ts#L300).
 
 ## Static dependencies
 
 - [apps/api/src/modules/operations/domain/matching.ts](./apps--api--src--modules--operations--domain--matching.ts.md)
 - [apps/api/src/modules/operations/domain/strength.ts](./apps--api--src--modules--operations--domain--strength.ts.md)
+- [packages/connectors/src/index.ts](./packages--connectors--src--index.ts.md)
 - [packages/contracts/src/index.ts](./packages--contracts--src--index.ts.md)
 
 Other import specifiers: none.
@@ -43,12 +45,14 @@ Other import specifiers: none.
 ## Static consumers
 
 - [apps/api/src/modules/operations/**tests**/candidates.test.ts](./apps--api--src--modules--operations--__tests__--candidates.test.ts.md)
+- [apps/api/src/modules/operations/domain/candidate-reference.ts](./apps--api--src--modules--operations--domain--candidate-reference.ts.md)
 - [apps/api/src/modules/operations/operations.candidates.ts](./apps--api--src--modules--operations--operations.candidates.ts.md)
+- [eval/replay-public.ts](./eval--replay-public.ts.md)
 
 ## Maintenance and verification
 
 Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
 
-Source SHA-256: `4f4492ed0d926a1e3a877efaf3d95ed57f0436c4daffe9be7b7dae22b0ba88c0`.
+Source SHA-256: `87f4a2f6a5cf58d4e727546d15c34c8a67c2036b5edc5f8bebae55854df4d9d9`.
 
 Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

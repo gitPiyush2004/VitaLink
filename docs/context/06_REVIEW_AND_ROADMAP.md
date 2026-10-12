@@ -14,19 +14,17 @@ A convincing public-data review does not require a fictional supplier or hospita
 
 **Priority 1, product candidate comparison.** Implemented against live openFDA and exercised end to end. Candidates are retrieved by active ingredient and compared against the investigated listing on ingredients, strength, dosage form, administration route and marketing category, each with its own `match`/`differs`/`unknown` verdict and no aggregate score. Drugs@FDA supplies approval, therapeutic-equivalence and marketing status; FDA's own reported shortage status is attached per listing; hard exclusions are stored apart from attribute differences; coverage and retrieval limits are reported. See [ADR 0014](../adr/0014-candidate-discovery-from-public-listings.md) and the [operations module README](../../apps/api/src/modules/operations/README.md).
 
-Two parts of the original criterion are **not** met and should not be claimed. _Release characteristics_ are not compared, because no integrated source supplies them — DailyMed would be the addition. _Matching quality is unmeasured_: there is no manually audited set, so this is a working comparison with explicit evidence, not a validated one. That measurement is priority 6.
+Two parts of the original criterion are **not** met and should not be claimed. _Release characteristics_ are not compared, because no integrated source supplies them — DailyMed would be the addition. _General matching quality is unmeasured_: a 30-case purposive assistant technical review now exists, but it is not independent or representative. A independently reviewed set remains prepared human work.
 
-## Recommended next build, not implemented yet
+## Completed Phase 1 additions
 
-| Priority | Feature                                    | Completion evidence                                                                                                                                          |
-| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2        | Event/product change history               | Timestamped source versions and a readable change view; distinguish changed facts from refresh times                                                         |
-| 3        | Investigation report suitable for review   | Evidence, sources, limits, candidate reasoning and decision record in one readable export; current export is JSON                                            |
-| 4        | Dated public cost benchmarks where covered | Verified product/unit alignment; displayed source date; benchmark clearly distinct from an offer                                                             |
-| 5        | Narrow US road-route exposure comparison   | User-specified verified endpoints, appropriate vehicle routing, actual returned alternatives, hazard overlap and missing coverage; no invented closure/delay |
-| 6        | Follow-up evaluation                       | Source-backed outcomes and a manually audited relevance/matching set; dated snapshots to prevent hindsight leakage                                           |
+Source-change history, verified archive association, readable reports, public-evidence next actions, a 30-case technical comparison audit and end-to-end local acceptance are complete. See [the readiness note](14_PHASE1_REVIEW_READINESS.md) for dated figures and limitations. The blank independent review packet is prepared; no human answers or general matching accuracy are claimed.
 
-These priorities follow [competitor research](10_COMPETITOR_RESEARCH.md). The route connector already exists, but a safe and useful route workflow still needs endpoint, profile, hazard, coverage and UI work.
+The historical-data layer and conditional persistence evaluation are also implemented. Near-majority accuracy and zero resolution recall do not justify a deployed prediction. Identity alignment, eligible cohorts and useful contemporaneous features remain research work.
+
+## Proposed Phase 2 scope
+
+Public cost benchmarks, verified-endpoint road exposure, release-characteristic evidence, independent relevance/usability evaluation and improved shortage forecasting cohorts remain proposals. None is necessary to fabricate a supplier or hospital for the completed Phase 1 public-evidence investigation. Real operational imports require a partner and verified input coverage.
 
 ## Later operational mode
 

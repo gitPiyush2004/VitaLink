@@ -40,6 +40,8 @@ Other import specifiers: none.
 - [packages/connectors/src/http/index.ts](./packages--connectors--src--http--index.ts.md)
 - [packages/connectors/src/http/rate-limiter.ts](./packages--connectors--src--http--rate-limiter.ts.md)
 - [packages/connectors/src/http/retry.ts](./packages--connectors--src--http--retry.ts.md)
+- [packages/connectors/src/sources/**tests**/fda-archive.test.ts](./packages--connectors--src--sources--__tests__--fda-archive.test.ts.md)
+- [packages/connectors/src/sources/**tests**/openfda-page.test.ts](./packages--connectors--src--sources--__tests__--openfda-page.test.ts.md)
 
 ## Maintenance and verification
 

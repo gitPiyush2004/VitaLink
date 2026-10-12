@@ -39,7 +39,6 @@ Other import specifiers: none.
 - [apps/api/src/modules/logistics/domain/carrier-fallbacks.ts](./apps--api--src--modules--logistics--domain--carrier-fallbacks.ts.md)
 - [apps/api/src/modules/logistics/index.ts](./apps--api--src--modules--logistics--index.ts.md)
 - [apps/api/src/modules/logistics/logistics.service.ts](./apps--api--src--modules--logistics--logistics.service.ts.md)
-- [apps/api/src/modules/operations/domain/matching.ts](./apps--api--src--modules--operations--domain--matching.ts.md)
 - [apps/api/src/modules/operations/index.ts](./apps--api--src--modules--operations--index.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
 - [apps/api/src/modules/scenarios/index.ts](./apps--api--src--modules--scenarios--index.ts.md)

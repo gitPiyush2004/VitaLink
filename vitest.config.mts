@@ -11,7 +11,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['apps/**/__tests__/**/*.test.ts', 'packages/**/__tests__/**/*.test.ts'],
+    include: [
+      'apps/**/__tests__/**/*.test.ts',
+      'packages/**/__tests__/**/*.test.ts',
+      'scripts/history/__tests__/**/*.test.ts',
+    ],
     // brain has its own runner (pytest); eval notebooks are not tests.
     exclude: ['**/node_modules/**', '**/dist/**', 'apps/brain/**'],
     coverage: {

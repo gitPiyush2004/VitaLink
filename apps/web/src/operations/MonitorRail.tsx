@@ -12,6 +12,8 @@ export function MonitorRail({
   record,
   query,
   kind,
+  sourceStatus,
+  setSourceStatus,
   watchOnly,
   setQuery,
   setKind,
@@ -28,6 +30,8 @@ export function MonitorRail({
   record: Investigation | null;
   query: string;
   kind: string;
+  sourceStatus: string;
+  setSourceStatus: (value: string) => void;
   watchOnly: boolean;
   setQuery: (value: string) => void;
   setKind: (value: string) => void;
@@ -95,6 +99,28 @@ export function MonitorRail({
                 ☆ Watchlist
               </button>
             </div>
+            <select
+              aria-label="Source status"
+              value={sourceStatus}
+              onChange={(event) => {
+                setSourceStatus(event.target.value);
+              }}
+            >
+              <option value="ALL">All source statuses</option>
+              {[
+                ...new Set(
+                  (data?.incidents ?? [])
+                    .filter((one) => kind === 'ALL' || one.kind === kind)
+                    .map((one) => one.status),
+                ),
+              ]
+                .sort()
+                .map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+            </select>
           </div>
           <div className="op-event-list">
             {visible.map((one) => (
@@ -133,7 +159,9 @@ export function MonitorRail({
                 openCase(one);
               }}
             >
-              <span className="op-tag cyan">{one.status}</span>
+              <span className="op-tag cyan">
+                {one.status === 'ACTIONED' ? 'Decision recorded' : one.status}
+              </span>
               <strong>{one.analysis?.drugName ?? one.title}</strong>
               <small>{dateLabel(one.updatedAt)}</small>
             </button>

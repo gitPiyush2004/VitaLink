@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { investigationSchema, responsePlanInputSchema, watchSchema } from '@vitalink/contracts';
+import {
+  investigationSchema,
+  investigationDecisionInputSchema,
+  responsePlanInputSchema,
+  watchSchema,
+} from '@vitalink/contracts';
 
 const MAX_ID_LENGTH = 200;
 const MIN_GENERIC_LENGTH = 2;
@@ -26,3 +31,5 @@ export const updateBody = z
     selectedOptionId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'Supply a note, status or response selection.');
+
+export const decisionBody = investigationDecisionInputSchema;

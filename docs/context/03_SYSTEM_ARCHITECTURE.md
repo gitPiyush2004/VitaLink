@@ -62,3 +62,7 @@ A coherent graph is rebuilt for the selected catalogue/trace context; cached cas
 Brain requests carry a service secret from the server. Keys, refresh tokens and raw carrier payloads must not appear in browser responses, context notes or public exports. Temporary carrier archives expire; a retained reference is not a permanent evidence archive. These limits matter before production live quoting.
 
 For an end-to-end request, read [workflows](05_FEATURE_WORKFLOWS.md), then follow its source links from [the index](FILE_INDEX.md).
+
+## Phase 1 retained evidence and reports
+
+Operations separates current monitor rows, immutable live fact versions, public verified archive imports and organisation-scoped cases. Incident repositories retain unchanged fact fingerprints without adding refresh-only changes and reject older cached observations. Archive imports refuse incompatible interpretations. The report service checks case organisation scope before querying history, archive associations or feed status; the browser produces a script-free HTML export from the validated report contract. Live and archive history never infer resolution from disappearance.

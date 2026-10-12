@@ -23,7 +23,7 @@ import { ApiError, login } from '../api/client';
 const FACTS = [
   {
     lead: 'Watch regulatory events.',
-    rest: 'Current FDA shortage presentations and reported recalls, with source dates, lots and availability.',
+    rest: 'Published FDA shortages, resolutions, planned discontinuations and recalls, with source dates, lots and availability.',
   },
   {
     lead: 'Investigate medicine exposure.',
@@ -31,7 +31,7 @@ const FACTS = [
   },
   {
     lead: 'Record an informed response.',
-    rest: 'Compare supplier offers against your days of supply, preserve the evidence and document the decision.',
+    rest: 'Compare listed products, inspect source history, record the next investigation action and export a traceable report.',
   },
 ];
 

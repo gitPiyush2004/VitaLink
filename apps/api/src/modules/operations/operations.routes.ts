@@ -7,6 +7,7 @@ import { createOperationsController } from './operations.controller';
 import {
   analyseBody,
   createBody,
+  decisionBody,
   idParams,
   planBody,
   updateBody,
@@ -51,6 +52,7 @@ export function createOperationsRouter(): Router {
     validate({ params: idParams, body: planBody }),
     c.plan,
   );
+  mountEvidence(router, c);
   mountChanges(router, c);
   return router;
 }
@@ -80,5 +82,32 @@ function mountChanges(router: Router, c: ReturnType<typeof createOperationsContr
     requireScope('cases:write'),
     validate({ params: idParams }),
     c.removeWatch,
+  );
+}
+
+function mountEvidence(router: Router, c: ReturnType<typeof createOperationsController>): void {
+  router.get(
+    '/incidents/:id/history',
+    requireScope('cases:read'),
+    validate({ params: idParams }),
+    c.sourceHistory,
+  );
+  router.get(
+    '/investigations/:id/archive',
+    requireScope('cases:read'),
+    validate({ params: idParams }),
+    c.archive,
+  );
+  router.get(
+    '/investigations/:id/report',
+    requireScope('cases:read'),
+    validate({ params: idParams }),
+    c.report,
+  );
+  router.post(
+    '/investigations/:id/decision',
+    requireScope('cases:write'),
+    validate({ params: idParams, body: decisionBody }),
+    c.decide,
   );
 }

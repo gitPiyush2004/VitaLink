@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Investigation, ResponsePlanInput, Watch } from '@vitalink/contracts';
+import type {
+  Investigation,
+  InvestigationDecisionInput,
+  ResponsePlanInput,
+  Watch,
+} from '@vitalink/contracts';
 
 import { createCascadeService } from '@modules/cascade';
 import { createGraphService } from '@modules/graph';
 import { createLogisticsService } from '@modules/logistics';
 import { ConflictError, NotFoundError, ValidationError } from '@shared/errors';
 
+import { selectResponse, validateDecision } from './domain/decision';
 import { compareResponses } from './domain/response-plan';
 import type { InvestigationAnalyser } from './operations.analysis';
 import type { CandidateDiscovery } from './operations.candidates';
@@ -65,6 +71,7 @@ export class OperationsService {
       analysis: null,
       candidates: null,
       plan: null,
+      decision: null,
       notes: [],
       history: [{ at, action: 'Investigation opened; source evidence preserved.', author }],
     };
@@ -99,6 +106,7 @@ export class OperationsService {
         ...record,
         analysis,
         candidates: null,
+        decision: null,
         plan: null,
         cascadeId: null,
         recommendationId: null,
@@ -129,7 +137,7 @@ export class OperationsService {
     return this.save(
       org,
       author,
-      { ...record, candidates },
+      { ...record, candidates, decision: null, status: 'INVESTIGATING' },
       `Candidate discovery on ${reference.ingredient}: ${String(candidates.candidates.length)} FDA listings retrieved, ${String(usable)} without a disqualifying exclusion. Listings are not offers or stock.`,
     );
   }
@@ -209,6 +217,7 @@ export class OperationsService {
       {
         ...record,
         status: 'INVESTIGATING',
+        decision: null,
         plan: compareResponses(input, new Date().toISOString()),
       },
       'Response options compared using recorded operator inputs.',
@@ -225,13 +234,11 @@ export class OperationsService {
       selectedOptionId?: string | undefined;
     },
   ): Promise<Investigation> {
-    const record = await this.get(org, id);
-    if (input.selectedOptionId !== undefined) {
-      if (!record.plan?.rows.some((row) => row.id === input.selectedOptionId)) {
-        throw new ValidationError('Select an option from the saved comparison.');
-      }
-      record.plan.selectedOptionId = input.selectedOptionId;
-    }
+    const previous = await this.get(org, id);
+    const record =
+      input.selectedOptionId === undefined
+        ? previous
+        : selectResponse(previous, input.selectedOptionId);
     if (input.note) {
       record.notes.push({
         id: randomUUID(),
@@ -240,11 +247,62 @@ export class OperationsService {
         text: input.note,
       });
     }
-    if (input.status === 'ACTIONED' && !record.plan?.selectedOptionId) {
-      throw new ValidationError('Record a response decision before marking this actioned.');
+    if (input.status === 'ACTIONED' && !record.plan?.selectedOptionId && !record.decision) {
+      throw new ValidationError(
+        'Record a next action or response decision before marking this actioned.',
+      );
     }
     record.status = input.status ?? record.status;
     return this.save(org, author, record, updateDescription(input));
+  }
+
+  async sourceHistory(id: string) {
+    const [history, latest] = await Promise.all([
+      this.repo.incidentHistory(id),
+      this.repo.incident(id),
+    ]);
+    return {
+      incidentId: id,
+      ...history,
+      latest,
+      coverage:
+        'Up to 100 most recent retained fact versions. Tracking starts with retained/live observations; refreshes with unchanged facts do not create changes. A first tracked refresh may include parser normalization corrections to legacy records, not a new FDA announcement. This is not a complete FDA event history. Absence from a feed is not resolution.',
+    };
+  }
+
+  async archive(org: string, id: string) {
+    const record = await this.get(org, id);
+    return this.repo.archiveMedicine(record.incidentSnapshot.product);
+  }
+
+  async report(org: string, id: string) {
+    const investigation = await this.get(org, id);
+    const [sourceHistory, feeds, archive] = await Promise.all([
+      this.sourceHistory(investigation.incidentId),
+      this.repo.feeds(),
+      this.repo.archiveMedicine(investigation.incidentSnapshot.product),
+    ]);
+    return { generatedAt: new Date().toISOString(), investigation, sourceHistory, feeds, archive };
+  }
+
+  async decide(
+    org: string,
+    author: string,
+    id: string,
+    input: InvestigationDecisionInput,
+  ): Promise<Investigation> {
+    const record = await this.get(org, id);
+    validateDecision(record, input);
+    return this.save(
+      org,
+      author,
+      {
+        ...record,
+        status: 'ACTIONED',
+        decision: { ...input, author, recordedAt: new Date().toISOString() },
+      },
+      `Next action recorded: ${input.action}. This records analyst intent, not a clinical substitution, shipment or purchase.`,
+    );
   }
 
   async watch(org: string, input: Pick<Watch, 'term' | 'kind'>): Promise<Watch> {

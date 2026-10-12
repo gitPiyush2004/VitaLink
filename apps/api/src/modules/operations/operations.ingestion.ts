@@ -8,7 +8,7 @@ import type { OperationsRepository } from './operations.repository';
 
 const PAGE_SIZE = 100;
 const RECALL_LIMIT = 300;
-const SHORTAGE_LIMIT = 1000;
+const SHORTAGE_LIMIT = 2000;
 const GEOCODE_BATCH = 12;
 const GEOCODE_RETRY_MS = 604_800_000; // Seven days; unsuccessful lookups do not starve new cities.
 function pendingLocations(incidents: Incident[]): Incident[] {
@@ -46,21 +46,24 @@ export class OperationsIngestion {
       state: 'running',
       attemptedAt: new Date().toISOString(),
       succeededAt: old?.succeededAt ?? null,
-      records: 0,
+      records: old?.records ?? 0,
       changed: 0,
       error: null,
       coverage:
         id === 'recalls'
           ? 'Latest 300 recall reports, including completed/terminated records. Older events remain in saved investigations.'
-          : 'Current shortage presentations, up to 1,000 records. Availability varies by presentation.',
+          : 'Published shortage presentations across Current, Resolved and planned discontinuation statuses, up to 2,000 records. Status and presentation availability are separate.',
     };
     await this.repository.saveFeed(feed);
     try {
       const counts = await this.collect(id);
-      Object.assign(feed, counts, { state: 'healthy', succeededAt: new Date().toISOString() });
-      if (counts.records >= this.limit(id)) {
-        feed.coverage += ' Fetch cap reached; coverage is partial.';
-      }
+      Object.assign(feed, {
+        records: counts.records,
+        changed: counts.changed,
+        state: 'healthy',
+        succeededAt: new Date().toISOString(),
+      });
+      feed.coverage += retrievalCoverage(counts);
     } catch (error) {
       feed.state = 'error';
       feed.error = error instanceof Error ? error.message : 'Source unavailable';
@@ -72,29 +75,41 @@ export class OperationsIngestion {
     return id === 'recalls' ? RECALL_LIMIT : SHORTAGE_LIMIT;
   }
 
-  private async collect(
-    id: 'recalls' | 'shortages',
-  ): Promise<{ records: number; changed: number }> {
+  private async collect(id: 'recalls' | 'shortages'): Promise<{
+    records: number;
+    unique: number;
+    changed: number;
+    total: number | null;
+    complete: boolean;
+  }> {
     const collected: Incident[] = [];
     let changed = 0;
+    const totals = new Set<number | null>();
+    let exhausted = false;
     for (let skip = 0; skip < this.limit(id); skip += PAGE_SIZE) {
-      const incidents = await this.page(id, skip);
-      collected.push(...incidents);
-      if (incidents.length < PAGE_SIZE) break;
+      const page = await this.page(id, skip);
+      totals.add(page.total);
+      collected.push(...page.incidents);
+      if (exhaustedPage(page.incidents.length, page.total, collected.length)) {
+        exhausted = true;
+        break;
+      }
     }
     const unique = latestIncidents(collected);
     for (const incident of unique) changed += Number(await this.repository.saveIncident(incident));
-    // A cap means incomplete coverage: preserve older rows rather than guessing they resolved.
-    if (collected.length < this.limit(id)) {
+    const total = totals.size === 1 ? ([...totals][0] ?? null) : null;
+    const complete = exhausted && total !== null && collected.length === total;
+    // Pruning only removes a row from this bounded monitor, never its retained history or saved case.
+    if (complete) {
       await this.repository.prune(
         id === 'recalls' ? 'RECALL' : 'SHORTAGE',
         unique.map((one) => one.id),
       );
     }
-    return { records: collected.length, changed };
+    return { records: collected.length, unique: unique.length, changed, total, complete };
   }
 
-  private async page(id: 'recalls' | 'shortages', skip: number): Promise<Incident[]> {
+  private async page(id: 'recalls' | 'shortages', skip: number) {
     if (id === 'recalls') {
       const result = await this.fda.searchEnforcement({
         search: '_exists_:recall_number',
@@ -102,14 +117,20 @@ export class OperationsIngestion {
         limit: PAGE_SIZE,
         skip,
       });
-      return result.data.map((row) => recallIncident(row, result.provenance));
+      return {
+        incidents: result.data.map((row) => recallIncident(row, result.provenance)),
+        total: result.total,
+      };
     }
     const result = await this.fda.searchShortages({
-      search: 'status:"Current"',
+      search: '_exists_:generic_name',
       limit: PAGE_SIZE,
       skip,
     });
-    return result.data.map((row) => shortageIncident(row, result.provenance));
+    return {
+      incidents: result.data.map((row) => shortageIncident(row, result.provenance)),
+      total: result.total,
+    };
   }
 
   async locate(incident: Incident): Promise<Incident> {
@@ -158,4 +179,22 @@ export class OperationsIngestion {
         'Up to 12 recalling-firm cities per refresh. These points are geographic context, not manufacturing sites or delivery routes.',
     });
   }
+}
+
+function exhaustedPage(length: number, total: number | null, collected: number): boolean {
+  return length < PAGE_SIZE || (total !== null && collected >= total);
+}
+function retrievalCoverage(counts: {
+  records: number;
+  unique: number;
+  total: number | null;
+  complete: boolean;
+}): string {
+  const total = counts.total === null ? 'not reported' : String(counts.total);
+  return (
+    ` Retrieved ${String(counts.records)} rows (${String(counts.unique)} unique identities); FDA query total: ${total}.` +
+    (counts.complete
+      ? ' Query exhausted; paged retrieval is not an atomic snapshot.'
+      : ' Retrieval is partial or totals changed; absence is not resolution.')
+  );
 }

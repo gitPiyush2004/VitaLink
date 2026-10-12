@@ -1,10 +1,8 @@
 import { createHash } from 'node:crypto';
 
-import type { EnforcementReport, ShortageRecord } from '@vitalink/connectors';
+import { parseFdaDate, type EnforcementReport, type ShortageRecord } from '@vitalink/connectors';
 import type { Incident, Provenance } from '@vitalink/contracts';
 
-const YEAR_END = 4;
-const MONTH_END = 6;
 function harmonised(row: EnforcementReport | ShortageRecord) {
   return {
     productNdcs: row.openfda?.product_ndc ?? [],
@@ -96,12 +94,8 @@ export function shortageIncident(row: ShortageRecord, provenance: Provenance): I
 }
 
 export function sourceDate(raw: string | undefined): string | null {
-  if (!raw) return null;
-  const value = /^\d{8}$/.test(raw)
-    ? `${raw.slice(0, YEAR_END)}-${raw.slice(YEAR_END, MONTH_END)}-${raw.slice(MONTH_END)}`
-    : raw;
-  const ms = Date.parse(value);
-  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+  const date = parseFdaDate(raw);
+  return date === null ? null : `${date}T00:00:00.000Z`;
 }
 
 /** One presentation can appear twice in a source page. Save its newest update once. */

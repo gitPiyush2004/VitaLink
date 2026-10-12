@@ -1,8 +1,8 @@
 # Regulatory operations
 
-A connected workspace for a procurement or medicine supply analyst: observe a regulatory event, inspect its scope, relate it to a medicine, trace a stated disruption scenario, compare response options, and preserve the decision.
+A connected workspace for a procurement or medicine supply analyst: observe a regulatory event, inspect its scope, relate it to a medicine, trace a stated disruption scenario, compare listed product candidates, inspect source history, record the next action, and export a readable investigation.
 
-The hourly BullMQ worker fetches up to 300 recent FDA enforcement reports and 1,000 current shortage presentations. Feed health discloses fetch caps and errors. Stable identities prevent availability changes from duplicating presentations; source fetch times are preserved through the connector cache. A presentation listed as Available is not relabelled Unavailable simply because its national shortage status is Current.
+The hourly BullMQ worker fetches up to 300 recent FDA enforcement reports and 2,000 published shortage presentations across Current, Resolved and planned discontinuation. Feed health discloses fetch caps and errors. Stable identities prevent availability changes from duplicating presentations; source fetch times are preserved through the connector cache. A presentation listed as Available is not relabelled Unavailable simply because its national shortage status is Current. Multi-page retrieval stages rows before writes; failed source pages preserve the previous monitor and source totals govern conservative pruning.
 
 The public incident collection holds regulatory evidence. Investigations and watchlists are organisation scoped. Opening an investigation preserves the source snapshot. Writes use the preceding `updatedAt` for optimistic concurrency, so another analyst’s changes are not silently overwritten. Reanalysing a medicine clears decisions tied to the previous analysis.
 
@@ -36,6 +36,18 @@ All paths are under `/api/v1/operations`, authenticated with existing scopes.
 - `POST /investigations/:id/link` — attach a shipment recommendation with matching context.
 - `POST /investigations/:id/plan` — deterministic response comparison.
 - `PATCH /investigations/:id` — notes, response selection and status, with audit history.
+- `GET /incidents/:id/history` — public immutable live fact versions and latest monitor observation.
+- `GET /investigations/:id/archive` — organisation-scoped case lookup followed by exact printed-name archive association.
+- `GET /investigations/:id/report` — typed full evidence report, including current/source/archived observations and candidate reasoning.
+- `POST /investigations/:id/decision` — monitor, candidate investigation, professional review or a selected response intent.
 - `POST /watches`, `DELETE /watches/:id` — organisation watchlist.
 
 The `eval:audit` command replays a frozen public snapshot to measure coverage, without accessing the network or private investigations. A forecasting benchmark remains Phase 2 work; current snapshots cannot reconstruct historical information availability.
+
+## Retained evidence and Phase 1 boundaries
+
+Immutable live versions retain changed source facts, not each fetch or geocode update. The first migration can include normalization corrections; times are observations, not exact event onsets. Pruning the bounded current monitor does not delete history or opening snapshots. Archive imports validate original collection evidence; exact normalized printed-name association across companies/forms is separately disclosed and never presented as a verified NDC history.
+
+Duplicate retrieved product NDCs remain visible but excluded from selection. Mixed presentation shortage statuses remain mixed and conflicting availability is unknown; invalid/future dates are not joined. A saved candidate action requires one non-excluded listing. Public decisions do not require inventory, prices or shipment assumptions. Reanalysis/rediscovery clear old decisions; changing the selected response clears rationale tied to it.
+
+HTML rendering lives in the web report helper and escapes source/analyst strings, admits only HTTP(S) links and uses a script-free CSP plus sandboxed preview. Reports check organisation scope before querying case-related evidence. See [Phase 1 readiness](../../../../../docs/context/14_PHASE1_REVIEW_READINESS.md) for validation and the independent-review boundary.

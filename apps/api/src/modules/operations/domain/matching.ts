@@ -1,6 +1,13 @@
 import type { Incident, IncidentMatch, Watch } from '@vitalink/contracts';
 
-import type { DrugEntity, ManufacturerEntity } from '@modules/catalog';
+// Matching only needs identity fields; it does not depend on catalogue storage.
+type MatchingDrug = {
+  id: string;
+  genericName: string;
+  ndcProductCodes: string[];
+  manufacturerIds: string[];
+};
+type MatchingManufacturer = { id: string; nameRaw: string };
 
 export function normalise(value: string): string {
   return value
@@ -15,8 +22,8 @@ function productReason(kind: Incident['kind']): string {
 }
 export function matchIncident(
   incident: Incident,
-  drug: DrugEntity,
-  manufacturers: ManufacturerEntity[],
+  drug: MatchingDrug,
+  manufacturers: MatchingManufacturer[],
 ): IncidentMatch | null {
   const common = { drugId: drug.id, label: drug.genericName };
   if (incident.productNdcs.some((ndc) => drug.ndcProductCodes.includes(ndc))) {

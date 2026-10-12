@@ -16,7 +16,11 @@ This vault records the project direction, current implementation and source-leve
 8. [Decisions and history](08_DECISIONS_AND_HISTORY.md): why the scope changed.
 9. [Original-plan assessment](09_ORIGINAL_PLAN.md): ambition versus observability.
 10. [Competitor research](10_COMPETITOR_RESEARCH.md): sources and implications.
-11. [File index](FILE_INDEX.md): context for every versionable file outside this vault.
+11. [Candidate and forecast audit](11_CANDIDATE_AND_FORECAST_AUDIT.md): dated source checks, fixes and historical-data feasibility.
+12. [Historical-data layer](12_HISTORICAL_DATA_LAYER.md): immutable archive collection, observed histories and coverage gaps.
+13. [Conditional persistence evaluation](13_PERSISTENCE_EVALUATION.md): frozen temporal baselines, exclusions and limits.
+14. [Phase 1 review readiness](14_PHASE1_REVIEW_READINESS.md): completed scope, acceptance evidence, technical audit and honest review claims.
+15. [File index](FILE_INDEX.md): context for every versionable file outside this vault.
 
 ## Using this as an Obsidian vault
 
@@ -25,10 +29,10 @@ Open the repository's `docs/context` folder as a vault. Notes use ordinary Markd
 Example CLI commands after opening the folder:
 
 ```sh
-obsidian vault=context read path=00_START_HERE.md
-obsidian vault=context search query="UNVERIFIED_SCHEMA"
-obsidian vault=context backlinks path=04_DATA_AND_EVIDENCE.md
-obsidian vault=context unresolved total
+obsidian read vault=context path=00_START_HERE.md
+obsidian search vault=context query="UNVERIFIED_SCHEMA"
+obsidian backlinks vault=context path=04_DATA_AND_EVIDENCE.md
+obsidian unresolved vault=context total
 ```
 
 The vault name is the folder name, `context`; if multiple vaults share that name, select this vault explicitly in Obsidian before using the CLI. The overview notes were authored through the official Obsidian CLI. File notes are generated from the source inventory and TypeScript/Python syntax, with curated component responsibilities. Regenerate them with `npm run docs:context`; check coverage, fingerprints and local links with `npm run docs:context:check`.

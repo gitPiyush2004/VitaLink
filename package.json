@@ -42,7 +42,13 @@
     "cascade": "npm run cascade --workspace @vitalink/api --",
     "eval:audit": "tsx eval/audit.ts",
     "docs:context": "node scripts/docs/context.mjs",
-    "docs:context:check": "node scripts/docs/context.mjs --check"
+    "docs:context:check": "node scripts/docs/context.mjs --check",
+    "eval:public-data": "tsx eval/public-data.ts",
+    "eval:replay-public": "tsx eval/replay-public.ts",
+    "history:collect": "tsx scripts/history/collect.ts",
+    "history:replay": "tsx scripts/history/replay.ts",
+    "history:evaluate": "tsx scripts/history/evaluate-persistence.ts",
+    "history:import": "tsx --tsconfig apps/api/tsconfig.json --env-file=.env scripts/history/import-to-app.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

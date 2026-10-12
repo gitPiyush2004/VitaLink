@@ -33,7 +33,7 @@ export const ACTIVITY_NOTE =
   'Activity units are compared as printed on the listing. USP Units and International Units are not interchangeable for every substance.';
 
 /** Canonical unit families. Two strengths only compare when their families match. */
-type Family = 'mass' | 'volume' | 'usp_unit' | 'iu' | 'percent';
+type Family = 'mass' | 'volume' | 'usp_unit' | 'iu' | 'percent' | 'dose_unit';
 
 type Unit = { family: Family; /** Multiplier onto the family's base unit. */ factor: number };
 
@@ -107,6 +107,8 @@ type Denominator = Pick<ParsedStrength, 'per' | 'perFamily'>;
 function denominator(count: string | undefined, unitText: string | undefined): Denominator | null {
   // No `/` in the text at all: an absolute amount such as `500 mg`.
   if (unitText === undefined) return { per: null, perFamily: null };
+  // NDC uses /1 for one dosage unit (for example a tablet), not one mL.
+  if (unitText.trim() === '1' && count === undefined) return { per: 1, perFamily: 'dose_unit' };
   const unit = toUnit(unitText);
   if (unit === null) return null;
   // An omitted count means one, as in `mg/mL`.

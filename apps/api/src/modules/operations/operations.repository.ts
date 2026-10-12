@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import {
   feedStatusSchema,
   incidentSchema,
@@ -17,55 +15,11 @@ import {
   InvestigationModel,
   WatchModel,
 } from './models/operations.model';
+import { createArchiveRepository } from './operations.archive.repository';
+import { incidentRepository } from './operations.incidents.repository';
 
 const PUBLIC = 'public-regulatory-data';
-const LIST_LIMIT = 2000;
-function retainLocation(payload: Incident, prior: Incident | null): Incident['location'] {
-  if (prior?.location?.provenance && payload.location?.label === prior.location.label) {
-    return prior.location;
-  }
-  return payload.location;
-}
-function incidentRepository() {
-  return {
-    async incidents(): Promise<Incident[]> {
-      const docs = await IncidentModel.find({ org_id: PUBLIC })
-        .sort({ 'payload.publishedAt': -1, _id: 1 })
-        .limit(LIST_LIMIT)
-        .lean()
-        .exec();
-      return docs.map((doc) => incidentSchema.parse(doc.payload));
-    },
-    async incident(id: string): Promise<Incident | null> {
-      const doc = await IncidentModel.findOne({ _id: id, org_id: PUBLIC }).lean().exec();
-      return doc === null ? null : incidentSchema.parse(doc.payload);
-    },
-    async saveIncident(incident: Incident): Promise<boolean> {
-      const payload = incidentSchema.parse(incident);
-      const { updatedAt: _at, provenance: _provenance, location, ...content } = payload;
-      const digest = createHash('sha256')
-        .update(JSON.stringify({ ...content, location: location?.label }))
-        .digest('hex');
-      const old = await IncidentModel.findById(payload.id).lean().exec();
-      const changed = old?.digest !== digest;
-      const prior = old ? incidentSchema.parse(old.payload) : null;
-      payload.location = retainLocation(payload, prior);
-      await IncidentModel.updateOne(
-        { _id: payload.id },
-        {
-          $set: {
-            org_id: PUBLIC,
-            payload,
-            digest,
-            changed_at: changed ? new Date() : old?.changed_at,
-          },
-        },
-        { upsert: true },
-      ).exec();
-      return changed;
-    },
-  };
-}
+const LIST_LIMIT = 5000;
 function feedRepository() {
   return {
     async locate(incident: Incident): Promise<void> {
@@ -155,6 +109,7 @@ function watchRepository() {
 export function createOperationsRepository() {
   return {
     ...incidentRepository(),
+    ...createArchiveRepository(),
     ...feedRepository(),
     ...organisationRepository(),
     ...watchRepository(),

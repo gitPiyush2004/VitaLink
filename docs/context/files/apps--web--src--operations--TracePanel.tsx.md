@@ -28,7 +28,7 @@ Other import specifiers: `react`.
 
 ## Static consumers
 
-- [apps/web/src/operations/InvestigationPanel.tsx](./apps--web--src--operations--InvestigationPanel.tsx.md)
+- [apps/web/src/operations/ScenarioTools.tsx](./apps--web--src--operations--ScenarioTools.tsx.md)
 
 ## Maintenance and verification
 
