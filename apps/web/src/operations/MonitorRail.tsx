@@ -3,8 +3,10 @@ import { useState } from 'react';
 import type { Incident, Investigation } from '@vitalink/contracts';
 
 import { dateLabel, isWatched, type Dashboard } from './api';
+import { hasMappedLocation, type RecordScope } from './globe-data';
 import { SourcePanel } from './SourcePanel';
 
+export type DrawerMode = 'events' | 'cases' | 'sources';
 export function MonitorRail({
   data,
   visible,
@@ -15,7 +17,6 @@ export function MonitorRail({
   sourceStatus,
   setSourceStatus,
   watchOnly,
-  setQuery,
   setKind,
   setWatchOnly,
   choose,
@@ -23,6 +24,12 @@ export function MonitorRail({
   busy,
   act,
   notice,
+  mode,
+  setMode,
+  scope,
+  setScope,
+  placeLabel,
+  close,
 }: {
   data: Dashboard | null;
   visible: Incident[];
@@ -33,7 +40,6 @@ export function MonitorRail({
   sourceStatus: string;
   setSourceStatus: (value: string) => void;
   watchOnly: boolean;
-  setQuery: (value: string) => void;
   setKind: (value: string) => void;
   setWatchOnly: (value: boolean) => void;
   choose: (id: string) => void;
@@ -41,20 +47,40 @@ export function MonitorRail({
   busy: boolean;
   act: (task: () => Promise<unknown>) => Promise<void>;
   notice: (message: string) => void;
+  mode: DrawerMode;
+  setMode: (mode: DrawerMode) => void;
+  scope: RecordScope;
+  setScope: (scope: RecordScope) => void;
+  placeLabel: string;
+  close: () => void;
 }): React.ReactElement {
-  const [mode, setMode] = useState<'events' | 'cases' | 'sources'>('events');
-  const openCases = data?.investigations.filter((one) => one.status !== 'CLOSED').length ?? 0;
-  const located = visible.filter((one) => one.location?.coordinates).length;
+  const [showClosed, setShowClosed] = useState(false);
+  const cases = data?.investigations.filter((one) => showClosed || one.status !== 'CLOSED') ?? [];
+  const located = visible.filter(hasMappedLocation).length;
+  const heading = { events: 'Source records', cases: 'Investigations', sources: 'Source health' }[
+    mode
+  ];
   return (
-    <aside className="op-rail op-panel">
+    <aside className="op-rail op-panel" aria-label="Record drawer">
       <div className="op-rail-head">
-        <div className="op-section-label">OPERATIONS / PUBLIC SOURCES</div>
-        <h1>
-          Disruption monitor<span>{data ? data.incidents.length : '…'}</span>
-        </h1>
-        <p>Find the event. Trace the medicine. Record the response.</p>
+        <div>
+          <span className="op-section-label">FDA evidence</span>
+          <h1>
+            {heading}
+            <span>
+              {mode === 'events'
+                ? visible.length
+                : mode === 'cases'
+                  ? cases.length
+                  : (data?.feeds.length ?? '…')}
+            </span>
+          </h1>
+        </div>
+        <button aria-label="Close record drawer" onClick={close}>
+          ×
+        </button>
       </div>
-      <nav className="op-tabs">
+      <nav className="op-tabs" aria-label="Record drawer sections">
         {(['events', 'cases', 'sources'] as const).map((one) => (
           <button
             key={one}
@@ -63,21 +89,31 @@ export function MonitorRail({
               setMode(one);
             }}
           >
-            {one === 'cases' ? `Investigations (${String(openCases)})` : one}
+            {one === 'events' ? 'Records' : one === 'cases' ? 'Cases' : 'Sources'}
           </button>
         ))}
       </nav>
       {mode === 'events' && (
         <>
+          {scope === 'place' && (
+            <div className="op-place-scope">
+              <strong>{placeLabel}</strong>
+              <small>Reported firm cities; not manufacturing sites.</small>
+              <button
+                onClick={() => {
+                  setScope('all');
+                }}
+              >
+                Clear place selection
+              </button>
+            </div>
+          )}
           <div className="op-filters">
-            <input
-              aria-label="Search events"
-              placeholder="Search medicine, company, reason…"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-              }}
-            />
+            {query && (
+              <p className="op-search-context">
+                Results for <strong>“{query}”</strong>
+              </p>
+            )}
             <div className="op-title-row">
               <select
                 aria-label="Event type"
@@ -96,7 +132,7 @@ export function MonitorRail({
                   setWatchOnly(!watchOnly);
                 }}
               >
-                ☆ Watchlist
+                ☆ Watches
               </button>
             </div>
             <select
@@ -121,6 +157,21 @@ export function MonitorRail({
                   </option>
                 ))}
             </select>
+            {scope !== 'place' && (
+              <div className="op-scope-tabs" aria-label="Location filter">
+                {(['all', 'mapped', 'unmapped'] as const).map((one) => (
+                  <button
+                    key={one}
+                    aria-pressed={scope === one}
+                    onClick={() => {
+                      setScope(one);
+                    }}
+                  >
+                    {one === 'all' ? 'All' : one === 'mapped' ? 'Mapped' : 'No location'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="op-event-list">
             {visible.map((one) => (
@@ -137,41 +188,53 @@ export function MonitorRail({
             {visible.length === 0 && (
               <p className="op-empty">
                 {data
-                  ? 'No events match these filters. If the catalogue is empty, open Sources to refresh.'
-                  : 'Loading regulatory records…'}
+                  ? 'No records match these filters. Clear the filters or check Sources.'
+                  : 'Loading FDA records…'}
               </p>
             )}
           </div>
           <div className="op-rail-foot">
-            {visible.length} records · {located} geolocated
+            {visible.length} source records · {located} with mapped firm cities
             <br />
-            Unlocated events stay in this list.
+            Shortage presentations have national evidence scope.
           </div>
         </>
       )}
       {mode === 'cases' && (
-        <div className="op-event-list">
-          {data?.investigations.map((one) => (
+        <>
+          <div className="op-filters">
             <button
-              className={`op-event ${record?.id === one.id ? 'active' : ''}`}
-              key={one.id}
+              aria-pressed={showClosed}
               onClick={() => {
-                openCase(one);
+                setShowClosed(!showClosed);
               }}
             >
-              <span className="op-tag cyan">
-                {one.status === 'ACTIONED' ? 'Decision recorded' : one.status}
-              </span>
-              <strong>{one.analysis?.drugName ?? one.title}</strong>
-              <small>{dateLabel(one.updatedAt)}</small>
+              {showClosed ? 'Hide closed cases' : 'Show closed cases'}
             </button>
-          ))}
-          {data?.investigations.length === 0 && (
-            <p className="op-empty">
-              Select an event and open an investigation to preserve evidence and start analysis.
-            </p>
-          )}
-        </div>
+          </div>
+          <div className="op-event-list">
+            {cases.map((one) => (
+              <button
+                className={`op-event ${record?.id === one.id ? 'active' : ''}`}
+                key={one.id}
+                onClick={() => {
+                  openCase(one);
+                }}
+              >
+                <span className="op-tag cyan">
+                  {one.status === 'ACTIONED' ? 'Decision recorded' : one.status}
+                </span>
+                <strong>{one.analysis?.drugName ?? one.title}</strong>
+                <small>{dateLabel(one.updatedAt)}</small>
+              </button>
+            ))}
+            {cases.length === 0 && (
+              <p className="op-empty">
+                Select a source record and open an investigation to preserve its evidence.
+              </p>
+            )}
+          </div>
+        </>
       )}
       {mode === 'sources' && <SourcePanel data={data} busy={busy} act={act} notice={notice} />}
     </aside>
@@ -198,11 +261,25 @@ function EventRow({
           {incident.classification ? ` / ${incident.classification}` : ''}
         </span>
         {watched && <span className="op-watch-star">★</span>}
+        <small>
+          {incident.publishedAt
+            ? new Date(incident.publishedAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })
+            : 'Date unknown'}
+        </small>
       </div>
       <strong>{incident.title}</strong>
       <span className="op-event-company">{incident.company}</span>
       <div className="op-event-meta">
-        <span>{incident.location?.city ?? 'No reported location'}</span>
+        <span>
+          {hasMappedLocation(incident)
+            ? incident.location?.city
+            : incident.kind === 'SHORTAGE'
+              ? 'National evidence'
+              : 'Unmapped firm'}
+        </span>
         <span>{incident.status}</span>
       </div>
     </button>

@@ -21,6 +21,8 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Optional polling for files edited through a host bridge without native watch events.
+    watch: { usePolling: process.env['VITALINK_WATCH_POLLING'] === '1', interval: 700 },
     // The API is called through this proxy in development, so the browser makes
     // same-origin requests and the refresh cookie's SameSite=Strict still works.
     proxy: {

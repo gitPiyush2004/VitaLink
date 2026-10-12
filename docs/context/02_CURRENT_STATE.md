@@ -53,3 +53,7 @@ See [data and evidence](04_DATA_AND_EVIDENCE.md), [workflows](05_FEATURE_WORKFLO
 ## Final Phase 1 package
 
 Live fact tracking excludes refresh/geocode-only changes. Legacy normalization changes are disclosed; observations are not exact event times. Verified original archive imports are immutable and queried by exact normalized printed medicine name, not inferred NDC identity. Candidate duplicate identities are excluded; mixed presentation status and availability do not collapse by response order. The 30-case source-backed technical audit, real-case acceptance and remaining independent-review boundary are documented in [review readiness](14_PHASE1_REVIEW_READINESS.md).
+
+## Globe-first workspace
+
+The main workspace now opens with the globe, collapsible layers and on-demand records/cases/sources. Counted geographic contacts open actual city-linked recall records; the evidence inspector returns to the preceding camera view. National shortages remain unpinned and accessible through coverage/search. Candidate/report sections expand for reading, and retained live history versions can be selected explicitly. Public-domain Natural Earth overview cartography needs no tile API key. See [the UI context](15_GLOBE_WORKSPACE.md) for implementation, dated counts and limits.

@@ -20,7 +20,8 @@ This vault records the project direction, current implementation and source-leve
 12. [Historical-data layer](12_HISTORICAL_DATA_LAYER.md): immutable archive collection, observed histories and coverage gaps.
 13. [Conditional persistence evaluation](13_PERSISTENCE_EVALUATION.md): frozen temporal baselines, exclusions and limits.
 14. [Phase 1 review readiness](14_PHASE1_REVIEW_READINESS.md): completed scope, acceptance evidence, technical audit and honest review claims.
-15. [File index](FILE_INDEX.md): context for every versionable file outside this vault.
+15. [Globe workspace](15_GLOBE_WORKSPACE.md): globe-first interaction, cartography, national scope and camera context.
+16. [File index](FILE_INDEX.md): context for every versionable file outside this vault.
 
 ## Using this as an Obsidian vault
 

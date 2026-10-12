@@ -12,7 +12,11 @@ investigation intent, not an order or a clinical substitution.
 
 The globe and layered panels take visual inspiration from
 [God’s Eye View](https://github.com/bilawalsidhu/gods-eye-view). Map points identify
-recalling-firm cities, not factories or delivery routes.
+recalling-firm cities, not factories or delivery routes. Counted contacts open their
+records; the inspector returns to your previous camera view. National shortages
+remain accessible through coverage/search without invented pins. The bundled
+Natural Earth overview needs no map API key. See the
+[globe interaction context](docs/context/15_GLOBE_WORKSPACE.md).
 
 Start with the [project context vault](docs/context/00_START_HERE.md) for the
 purpose, current state, architecture, evidence limits, research and roadmap.

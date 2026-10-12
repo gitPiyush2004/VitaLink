@@ -38,7 +38,9 @@ Other import specifiers: none.
 - [apps/web/src/operations/NewsPanel.tsx](./apps--web--src--operations--NewsPanel.tsx.md)
 - [apps/web/src/operations/ReportPanel.tsx](./apps--web--src--operations--ReportPanel.tsx.md)
 - [apps/web/src/operations/SourcePanel.tsx](./apps--web--src--operations--SourcePanel.tsx.md)
-- [apps/web/src/operations/Workspace.tsx](./apps--web--src--operations--Workspace.tsx.md)
+- [apps/web/src/operations/WorkspaceChrome.tsx](./apps--web--src--operations--WorkspaceChrome.tsx.md)
+- [apps/web/src/operations/WorkspaceInspector.tsx](./apps--web--src--operations--WorkspaceInspector.tsx.md)
+- [apps/web/src/operations/useWorkspace.ts](./apps--web--src--operations--useWorkspace.ts.md)
 
 ## Maintenance and verification
 

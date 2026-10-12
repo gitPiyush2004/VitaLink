@@ -24,10 +24,12 @@ export function InvestigationPanel({
   record,
   busy,
   change,
+  onSectionChange,
 }: {
   record: Investigation;
   busy: boolean;
   change: (body: unknown, action?: string) => void;
+  onSectionChange?: (section: (typeof tabs)[number]) => void;
 }): React.ReactElement {
   const [generic, setGeneric] = useState(
     record.analysis?.drugName ?? record.incidentSnapshot.genericNames[0] ?? '',
@@ -60,6 +62,7 @@ export function InvestigationPanel({
             aria-pressed={tab === name}
             onClick={(event) => {
               setTab(name);
+              onSectionChange?.(name);
               event.currentTarget.closest('.op-detail-body')?.scrollTo({ top: 0 });
             }}
           >

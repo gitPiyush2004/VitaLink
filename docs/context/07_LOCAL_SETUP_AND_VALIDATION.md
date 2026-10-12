@@ -73,3 +73,13 @@ The final review build was exercised at `http://localhost:5180`, proxied to API 
 To use alternate ports, run `API_PORT=4001 WEB_ORIGIN=http://localhost:5180 REDIS_URL=redis://127.0.0.1:6380/1 npm run dev:api`, the worker with the same Redis URL, and `VITALINK_API_PROXY_TARGET=http://localhost:4001 npm run dev --workspace @vitalink/web -- --port 5180`. These are local runtime choices, not hardcoded deployment settings.
 
 Two real-source cases completed with no stock, quotes or route assumptions: heparin candidate investigation and recall lot-scope escalation intent. HTML/JSON exports and auth/org/concurrency checks passed. Separate-database repository checks preserved versions through monitor pruning and rejected changed archive interpretations. The verified 47-snapshot archive reimport was idempotent. See [review readiness](14_PHASE1_REVIEW_READINESS.md).
+
+## Current globe UI preview
+
+The isolated development preview on this host uses `http://localhost:5182` and API port 4001. Earlier local previews can retain older UI assets; use this port for the current review. Defaults for a fresh checkout remain 5173/4000. Optional polling helps hosts with unreliable filesystem notifications:
+
+```sh
+VITALINK_WATCH_POLLING=1 VITALINK_API_PROXY_TARGET=http://localhost:4001 npm run dev --workspace @vitalink/web -- --port 5182 --strictPort --host 127.0.0.1 --force
+```
+
+Bundled Natural Earth overview geometry requires no tile API key. Five geographic grouping/scope/freshness tests accompany the UI change. Browser checks exercise existing public-evidence cases and downloads without inventing data. Full verification results for the UI are recorded in [globe workspace](15_GLOBE_WORKSPACE.md).

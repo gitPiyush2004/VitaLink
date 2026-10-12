@@ -66,3 +66,7 @@ The independent review packet has 30 raw source-backed cases and blank answer sh
 Phase 2 can improve eligible historical cohorts and identity alignment, evaluate contemporaneous availability/news features against frozen baselines, integrate release characteristics, and conduct usability/independent matching review. Real inventory, supplier offers, delivery endpoints and validated carrier contracts are prerequisites for operational stockout, cost and route decisions. Cost benchmarks, road exposure, live quotes and deployment remain later scope.
 
 See [current implementation](02_CURRENT_STATE.md), [workflows](05_FEATURE_WORKFLOWS.md), [data boundaries](04_DATA_AND_EVIDENCE.md), [historical data](12_HISTORICAL_DATA_LAYER.md) and [persistence evaluation](13_PERSISTENCE_EVALUATION.md).
+
+## Globe interaction update
+
+The accepted globe-first redesign adds clustered city-record selection, camera context return, collapsible layers/record drawers, expanded investigations and selectable retained source observations. It improves presentation of the completed evidence workflow and preserves its scope. National shortages remain unpinned; city points remain firm-city context. See [the globe workspace](15_GLOBE_WORKSPACE.md) for source attribution, dated browser checks and new focused tests. Earlier dated acceptance and evaluation results above remain historical evidence.

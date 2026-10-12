@@ -1,5 +1,9 @@
 # Connected workflows
 
+## 0. Explore the globe workspace
+
+Select a counted recall contact to open the relevant records, then select a record to inspect FDA evidence. Closing its inspector restores the previous camera view. Use national evidence or global search for shortages, and Unmapped records for records without locations. Layers are optional; the complete Records view remains accessible. Open a saved investigation through Cases. Candidates and Report expand for reading; History selects only retained source observations. See [globe workspace](15_GLOBE_WORKSPACE.md).
+
 ## 1. Refresh and inspect real regulatory records
 
 `apps/workers/src/main.ts` registers the BullMQ worker. `operations.queue.ts` schedules/coalesces refreshes. `operations.ingestion.ts` requests typed FDA data through connectors, maps source rows with `domain/incidents.ts`, writes stable incident identities and records source health. Bounded geocoding adds recalling-firm city points without withholding unlocated list records.

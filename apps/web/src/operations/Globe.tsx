@@ -1,154 +1,387 @@
+import type { Feature, Geometry } from 'geojson';
 import maplibregl, { type GeoJSONSource } from 'maplibre-gl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Incident } from '@vitalink/contracts';
+
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { groupPlaces, hasMappedLocation } from './globe-data';
+import { graticule } from './globe-graticule';
+
+export type CameraCommand = { sequence: number; kind: 'overview' | 'fit' };
+type CameraPosition = { center: [number, number]; zoom: number; bearing: number; pitch: number };
+const overview = { center: [-98, 27] as [number, number], zoom: 1.75, bearing: 0, pitch: 0 };
+const duration = (): number =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 950;
 
 export function Globe({
   incidents,
   selected,
-  onSelect,
+  locationsEnabled,
+  command,
+  onPlace,
+  onNational,
 }: {
   incidents: Incident[];
   selected: Incident | null;
-  onSelect: (id: string) => void;
+  locationsEnabled: boolean;
+  command: CameraCommand;
+  onPlace: (ids: string[], label: string) => void;
+  onNational: () => void;
 }): React.ReactElement {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const select = useRef(onSelect);
-  select.current = onSelect;
+  const handlers = useRef({ onPlace, onNational });
+  handlers.current = { onPlace, onNational };
+  const places = useMemo(
+    () => groupPlaces(locationsEnabled ? incidents : []),
+    [incidents, locationsEnabled],
+  );
+  const currentPlaces = useRef(places);
+  currentPlaces.current = places;
+  const previousCamera = useRef<CameraPosition | null>(null);
+  const previousSelection = useRef<string | null>(null);
+  const sourceSignature = useRef('');
+  const revision = useRef(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState({ longitude: -98, latitude: 27, zoom: overview.zoom });
   useEffect(() => {
     if (!container.current) return;
     let instance: maplibregl.Map;
+    const markers = new Map<string, { marker: maplibregl.Marker; button: HTMLButtonElement }>();
+    let alive = true;
     try {
       instance = new maplibregl.Map({
         container: container.current,
-        center: [-92, 30],
-        zoom: 1.8,
-        maxZoom: 12,
+        ...overview,
+        maxZoom: 6,
+        attributionControl: { compact: true },
         style: {
           version: 8,
           sources: {
-            earth: {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution: '© OpenStreetMap contributors',
+            graticule: { type: 'geojson', data: graticule() },
+            countries: {
+              type: 'geojson',
+              data: '/maps/countries.geojson',
+              attribution:
+                'Made with <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
             },
           },
           layers: [
+            { id: 'ocean', type: 'background', paint: { 'background-color': '#070f1b' } },
             {
-              id: 'earth',
-              type: 'raster',
-              source: 'earth',
-              paint: {
-                'raster-saturation': -1,
-                'raster-brightness-max': 0.3,
-                'raster-contrast': 0.1,
-              },
+              id: 'land',
+              type: 'fill',
+              source: 'countries',
+              paint: { 'fill-color': '#1b2b3c', 'fill-opacity': 0.94 },
+            },
+            {
+              id: 'borders',
+              type: 'line',
+              source: 'countries',
+              paint: { 'line-color': '#476178', 'line-width': 0.65, 'line-opacity': 0.45 },
+            },
+            {
+              id: 'us-coverage',
+              type: 'fill',
+              source: 'countries',
+              filter: ['==', ['get', 'iso'], 'USA'],
+              paint: { 'fill-color': '#49d9e8', 'fill-opacity': 0.08 },
+            },
+            {
+              id: 'coordinate-grid',
+              type: 'line',
+              source: 'graticule',
+              paint: { 'line-color': '#8badc4', 'line-width': 0.6, 'line-opacity': 0.14 },
+            },
+            {
+              id: 'us-outline',
+              type: 'line',
+              source: 'countries',
+              filter: ['==', ['get', 'iso'], 'USA'],
+              paint: { 'line-color': '#49d9e8', 'line-width': 1, 'line-opacity': 0.4 },
             },
           ],
         },
-        attributionControl: { compact: true },
       });
       map.current = instance;
-      instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
       instance.on('load', () => {
+        if (!alive) return;
         instance.setProjection({ type: 'globe' });
-        instance.setSky({
-          'sky-color': '#080e19',
-          'horizon-color': '#164052',
-          'fog-color': '#0a1421',
-          'sky-horizon-blend': 0.7,
-          'horizon-fog-blend': 0.5,
-          'fog-ground-blend': 0.3,
+        const tooltip = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 24,
+          className: 'op-globe-tooltip',
         });
-        instance.addSource('incidents', {
+        instance.setSky({
+          'sky-color': '#060b12',
+          'horizon-color': '#24576a',
+          'fog-color': '#060b12',
+          'sky-horizon-blend': 0.8,
+          'horizon-fog-blend': 0.2,
+          'fog-ground-blend': 0.1,
+        });
+        instance.addSource('places', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+          cluster: true,
+          clusterRadius: 48,
+          clusterMaxZoom: 4,
+          clusterProperties: {
+            records: ['+', ['get', 'records']],
+            critical: ['+', ['get', 'critical']],
+          },
+        });
+        instance.addLayer({
+          id: 'place-targets',
+          type: 'circle',
+          source: 'places',
+          paint: { 'circle-radius': 14, 'circle-opacity': 0 },
+        });
+        instance.addSource('selection', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
         });
         instance.addLayer({
-          id: 'halo',
+          id: 'selected-ring',
           type: 'circle',
-          source: 'incidents',
-          paint: { 'circle-radius': 17, 'circle-color': '#ff5c6e', 'circle-opacity': 0.12 },
-        });
-        instance.addLayer({
-          id: 'events',
-          type: 'circle',
-          source: 'incidents',
+          source: 'selection',
           paint: {
-            'circle-radius': 5,
-            'circle-color': ['case', ['==', ['get', 'critical'], true], '#ff5c6e', '#f4b860'],
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#ffe4da',
+            'circle-radius': 30,
+            'circle-color': '#49d9e8',
+            'circle-opacity': 0.05,
+            'circle-stroke-color': '#49d9e8',
+            'circle-stroke-width': 1.5,
+            'circle-stroke-opacity': 0.9,
           },
         });
-        instance.on('click', 'events', (event) => {
-          const id: unknown = event.features?.[0]?.properties?.id;
-          if (typeof id === 'string') select.current(id);
+        const renderContacts = (): void => {
+          if (!alive || !instance.isSourceLoaded('places')) return;
+          const seen = new Set<string>();
+          for (const feature of instance.querySourceFeatures('places') as Feature<
+            Geometry,
+            Record<string, unknown>
+          >[]) {
+            if (feature.geometry.type !== 'Point') continue;
+            const props = feature.properties;
+            const isCluster = props.cluster === true;
+            const key = isCluster ? `cluster:${String(props.cluster_id)}` : String(props.id);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const coordinates = feature.geometry.coordinates as [number, number];
+            let contact = markers.get(key);
+            if (!contact) {
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                tooltip.remove();
+                const generation = revision.current;
+                void (async () => {
+                  const source = instance.getSource<GeoJSONSource>('places');
+                  if (!source) return;
+                  const ids = isCluster
+                    ? (
+                        (await source.getClusterLeaves(
+                          Number(props.cluster_id),
+                          5000,
+                          0,
+                        )) as Feature<Geometry, Record<string, unknown>>[]
+                      ).map((leaf) => String(leaf.properties.id))
+                    : [String(props.id)];
+                  if (!alive || generation !== revision.current) return;
+                  const matches = currentPlaces.current.filter((place) => ids.includes(place.id));
+                  if (!matches.length) return;
+                  handlers.current.onPlace(
+                    matches.flatMap((place) => place.incidentIds),
+                    matches.length === 1
+                      ? matches[0]!.label
+                      : `${String(matches.length)} recalling-firm cities`,
+                  );
+                  instance.flyTo({
+                    center: coordinates,
+                    zoom: Math.min(Math.max(instance.getZoom() + 0.9, 3), 4.7),
+                    duration: duration(),
+                    offset: window.innerWidth > 760 ? [150, 0] : [0, -100],
+                  });
+                })().catch(() => {
+                  if (alive) {
+                    setError(
+                      'The map selection changed. Select the marker again or use Mapped records.',
+                    );
+                  }
+                });
+              });
+              const marker = new maplibregl.Marker({ element: button })
+                .setLngLat(coordinates)
+                .addTo(instance)
+                .setSubpixelPositioning(true)
+                .setOpacity(1, 0);
+              const preview = (): void => {
+                tooltip.setLngLat(marker.getLngLat()).setText(button.title).addTo(instance);
+              };
+              button.addEventListener('mouseenter', preview);
+              button.addEventListener('focus', preview);
+              button.addEventListener('mouseleave', () => {
+                tooltip.remove();
+              });
+              button.addEventListener('blur', () => {
+                tooltip.remove();
+              });
+              contact = { marker, button };
+              markers.set(key, contact);
+            }
+            contact.marker.setLngLat(coordinates);
+            const label = isCluster
+              ? `${String(props.point_count)} firm cities`
+              : String(props.label);
+            contact.button.classList.add('op-contact');
+            contact.button.classList.toggle('critical', Number(props.critical) > 0);
+            contact.button.classList.toggle('cluster', isCluster);
+            contact.button.textContent = String(props.records);
+            contact.button.setAttribute(
+              'aria-label',
+              `${label}: ${String(props.records)} recall records. Inspect city-level evidence`,
+            );
+            contact.button.title = `${label} · ${String(props.records)} recall records`;
+          }
+          for (const [key, contact] of markers) {
+            if (!seen.has(key)) {
+              contact.marker.remove();
+              markers.delete(key);
+            }
+          }
+        };
+        instance.on('render', renderContacts);
+        instance.on('click', 'us-coverage', () => {
+          handlers.current.onNational();
         });
-        instance.on('mouseenter', 'events', () => {
-          instance.getCanvas().style.cursor = 'pointer';
-        });
-        instance.on('mouseleave', 'events', () => {
-          instance.getCanvas().style.cursor = '';
+        instance.on('moveend', () => {
+          const center = instance.getCenter();
+          setView({ longitude: center.lng, latitude: center.lat, zoom: instance.getZoom() });
         });
         setReady(true);
       });
       instance.on('error', () => {
-        setError(
-          'Some map tiles could not load. All source records remain available in the event list.',
-        );
+        if (alive) {
+          setError('Some map data could not load. Open Records to inspect the FDA evidence.');
+        }
       });
     } catch {
-      setError('The map needs WebGL. All source records remain available in the event list.');
+      setError('The globe needs WebGL. Open Records to inspect all FDA evidence.');
     }
     return () => {
+      alive = false;
+      markers.forEach(({ marker }) => {
+        marker.remove();
+      });
       map.current?.remove();
       map.current = null;
+      sourceSignature.current = '';
+      previousSelection.current = null;
+      previousCamera.current = null;
     };
   }, []);
   useEffect(() => {
     if (!ready) return;
-    const source = map.current?.getSource<GeoJSONSource>('incidents');
-    source?.setData({
-      type: 'FeatureCollection',
-      features: incidents.flatMap((incident) =>
-        incident.location?.coordinates
-          ? [
-              {
-                type: 'Feature' as const,
-                properties: { id: incident.id, critical: incident.classification === 'Class I' },
-                geometry: { type: 'Point' as const, coordinates: incident.location.coordinates },
-              },
-            ]
-          : [],
-      ),
-    });
-  }, [incidents, ready]);
+    const data = {
+      type: 'FeatureCollection' as const,
+      features: places.map((place) => ({
+        type: 'Feature' as const,
+        properties: {
+          id: place.id,
+          label: place.label,
+          records: place.incidentIds.length,
+          critical: place.criticalCount,
+        },
+        geometry: { type: 'Point' as const, coordinates: place.coordinates },
+      })),
+    };
+    const signature = JSON.stringify(data);
+    if (signature === sourceSignature.current) return;
+    sourceSignature.current = signature;
+    revision.current += 1;
+    map.current?.getSource<GeoJSONSource>('places')?.setData(data);
+  }, [places, ready]);
   useEffect(() => {
-    if (ready && selected?.location?.coordinates) {
-      map.current?.flyTo({
-        center: selected.location.coordinates,
-        zoom: 3.3,
-        duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1200,
+    const instance = map.current;
+    if (!ready || !instance) return;
+    const coordinates =
+      selected && hasMappedLocation(selected) ? selected.location?.coordinates : null;
+    instance.getSource<GeoJSONSource>('selection')?.setData({
+      type: 'FeatureCollection',
+      features: coordinates
+        ? [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates } }]
+        : [],
+    });
+    instance.setPaintProperty(
+      'us-coverage',
+      'fill-opacity',
+      selected?.kind === 'SHORTAGE' ? 0.15 : 0.08,
+    );
+    if (selected?.id === previousSelection.current) return;
+    if (selected && !previousSelection.current) {
+      const center = instance.getCenter();
+      previousCamera.current = {
+        center: [center.lng, center.lat],
+        zoom: instance.getZoom(),
+        bearing: instance.getBearing(),
+        pitch: instance.getPitch(),
+      };
+    }
+    previousSelection.current = selected?.id ?? null;
+    if (selected) {
+      instance.flyTo({
+        ...(coordinates
+          ? { center: coordinates, zoom: Math.max(instance.getZoom(), 3.5) }
+          : overview),
+        duration: duration(),
+        offset: window.innerWidth > 760 ? [-220, 0] : [0, 0],
       });
+    } else if (previousCamera.current) {
+      instance.flyTo({ ...previousCamera.current, duration: duration() });
+      previousCamera.current = null;
     }
   }, [selected, ready]);
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance || command.sequence === 0) return;
+    previousCamera.current = null;
+    if (command.kind === 'fit' && currentPlaces.current.length) {
+      const bounds = new maplibregl.LngLatBounds();
+      currentPlaces.current.forEach((place) => {
+        bounds.extend(place.coordinates);
+      });
+      instance.fitBounds(bounds, {
+        padding: window.innerWidth > 760 ? { top: 120, bottom: 130, left: 280, right: 110 } : 70,
+        maxZoom: 4.5,
+        duration: duration(),
+      });
+    } else {
+      instance.flyTo({ ...overview, duration: duration() });
+    }
+  }, [command, ready]);
   return (
     <div className="op-map-wrap">
       <div
         ref={container}
         className="op-map"
-        aria-label="Regulatory events at recalling-firm city locations"
+        aria-label="Interactive globe of FDA recalling-firm city records"
       />
-      {error && <p className="op-map-error">{error}</p>}
-      <div className="op-map-caption">
-        <span className="op-dot" /> RECALLING-FIRM CITIES <span>•</span> Geographic context; not
-        factories or shipment routes
+      {error && (
+        <p className="op-map-error" role="status">
+          {error}
+        </p>
+      )}
+      <div className="op-camera-readout" aria-label="Map camera position">
+        <span>View center</span>
+        <b>
+          {Math.abs(view.latitude).toFixed(2)}° {view.latitude < 0 ? 'S' : 'N'} /{' '}
+          {Math.abs(view.longitude).toFixed(2)}° {view.longitude < 0 ? 'W' : 'E'}
+        </b>
+        <span>Zoom {view.zoom.toFixed(1)}</span>
       </div>
     </div>
   );

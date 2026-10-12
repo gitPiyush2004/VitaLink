@@ -6,7 +6,7 @@
     "graph": "Builds coherent catalogue-backed ingredient/labeler associations; physical plant and delivery dependencies are unobserved.",
     "cascade": "Traces a conditional upstream shock through observed associations and projects explicitly supplied days of cover.",
     "logistics": "Derives shipment constraints, excludes infeasible/unknown-critical-capability carriers and scores available evidence; no live quote has been established.",
-    "scenarios": "Enumerates bounded sourcing × logistics scenarios, calculates outcomes and compares Pareto trade-offs with disclosed objectives.",
+    "scenarios": "Enumerates bounded sourcing \u00d7 logistics scenarios, calculates outcomes and compares Pareto trade-offs with disclosed objectives.",
     "operations": "Connects public regulatory incidents to organisation-scoped investigations, analysis, conditional response inputs and decision history.",
     "health": "Reports process/dependency health without implementing a pharmaceutical analysis stage.",
     "brain": "Calculates the published reliability model and proxy-rate fits; formula reproduction is not validated forecasting.",
@@ -80,8 +80,8 @@
     "apps/workers/src/main.ts": "Starts datastores and registers the operations worker; initial and hourly regulatory refreshes are the active background workflow.",
     "apps/web/src/App.tsx": "Manages authenticated application entry and defaults to the connected operations workspace, with earlier stage tools retained.",
     "apps/web/src/api/client.ts": "Handles API response envelopes, access-token state, credentialed refresh and retries; bodyless refresh is a supported request.",
-    "apps/web/src/operations/Workspace.tsx": "Composes polling, filtering, selected source/case state, globe, monitor and investigation panels.",
-    "apps/web/src/operations/Globe.tsx": "Renders actual recalling-firm city points on the MapLibre globe; it does not add invented factories or shipping lanes.",
+    "apps/web/src/operations/Workspace.tsx": "Composes the globe-first shell, controlled record drawers, layers, camera controls and source/case inspectors.",
+    "apps/web/src/operations/Globe.tsx": "Renders bundled Natural Earth cartography and clustered actual recalling-firm cities, preserves camera context and keeps national shortages unpinned.",
     "apps/web/src/operations/MonitorRail.tsx": "Lists/filter-selects real regulatory events and saved cases, with watch and source panels.",
     "apps/web/src/operations/Evidence.tsx": "Displays incident facts, source links, presentation availability, identifiers and limited geographic scope before opening a case.",
     "apps/web/src/operations/Analysis.tsx": "Displays medicine matching, catalogue relationships and reliability assumptions/results.",
@@ -159,6 +159,15 @@
     "apps/web/src/operations/__tests__/report.test.ts": "Verifies report uncertainty/scope statements, source field comparisons and hostile text/URL handling.",
     "packages/contracts/src/operational-archive.ts": "Runtime-validates the archive association/report shape and explicitly limits it to normalized printed-name observations.",
     "scripts/history/import-to-app.ts": "Revalidates original bodies, parser interpretation and manifest capture alignment before explicitly importing public archive observations.",
-    "apps/web/vite.config.ts": "Configures frontend aliases and same-origin development proxy; an optional proxy target supports isolated local acceptance ports."
+    "apps/web/vite.config.ts": "Configures frontend aliases and same-origin development proxy; an optional proxy target supports isolated local acceptance ports.",
+    "apps/web/src/operations/WorkspaceChrome.tsx": "Provides global search, compact layers, national-evidence entry and actual source-ingestion/worker health.",
+    "apps/web/src/operations/WorkspaceInspector.tsx": "Presents compact source evidence or expandable existing investigations without changing organisation-scoped actions.",
+    "apps/web/src/operations/useWorkspace.ts": "Owns polling, conservative filters, record/case selection and controlled globe/drawer state.",
+    "apps/web/src/operations/globe-data.ts": "Validates city-level recall coordinates, groups all overlapping records, scopes lists and derives freshness from successful ingestion.",
+    "apps/web/src/operations/globe-graticule.ts": "Generates cartographic latitude/longitude guides; these lines are not observed supply routes.",
+    "apps/web/src/operations/globe-workspace.css": "Styles the responsive globe-first shell, native contacts, optional drawers and expanding inspectors.",
+    "apps/web/src/operations/__tests__/globe-data.test.ts": "Tests national records without pins, overlapping counts, invalid coordinates, distinct coordinate groups and actual freshness.",
+    "apps/web/public/maps/countries.geojson": "Bundled public-domain Natural Earth 1:110m overview geometry; no navigation, site or route inference.",
+    "apps/web/public/maps/README.md": "Records Natural Earth source/license, retrieval hashes, trimming and geographic interpretation limits."
   }
 }

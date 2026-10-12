@@ -1,16 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-
-import type { Investigation } from '@vitalink/contracts';
-
-import { isWatched, operations, type Dashboard } from './api';
-import { Evidence } from './Evidence';
 import { Globe } from './Globe';
-import { InvestigationPanel } from './InvestigationPanel';
 import { MonitorRail } from './MonitorRail';
+import { useWorkspace } from './useWorkspace';
+import { ExplorePrompt, LayerControl, WorkspaceFooter, WorkspaceHeader } from './WorkspaceChrome';
+import { WorkspaceInspector } from './WorkspaceInspector';
 import './operations.css';
 import './candidates.css';
-
-const POLL_MS = 15000;
+import './globe-workspace.css';
 export function Workspace({
   onSignOut,
   onTools,
@@ -18,172 +13,198 @@ export function Workspace({
   onSignOut: () => void;
   onTools: () => void;
 }): React.ReactElement {
-  const [data, setData] = useState<Dashboard | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [record, setRecord] = useState<Investigation | null>(null);
-  const [query, setQuery] = useState('');
-  const [kind, setKind] = useState('ALL');
-  const [sourceStatus, setSourceStatus] = useState('ALL');
-  const [watchOnly, setWatchOnly] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const reload = useCallback(async () => {
-    setData(await operations.dashboard());
-  }, []);
-  useEffect(() => {
-    const load = (): void => {
-      void reload().catch((cause: unknown) => {
-        setError(cause instanceof Error ? cause.message : 'Could not load workspace');
-      });
-    };
-    load();
-    const timer = setInterval(load, POLL_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [reload]);
-  async function act(task: () => Promise<unknown>): Promise<void> {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await task();
-      await reload();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The request failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-  function choose(id: string): void {
-    setSelected(id);
-    setRecord(null);
-  }
-  const incidents = data?.incidents ?? [];
-  const visible = incidents.filter(
-    (one) =>
-      (kind === 'ALL' || one.kind === kind) &&
-      (sourceStatus === 'ALL' || one.status === sourceStatus) &&
-      (!watchOnly || isWatched(one, data?.watches ?? [])) &&
-      `${one.title} ${one.company} ${one.reason} ${one.genericNames.join(' ')} ${one.productNdcs.join(' ')} ${one.substances.join(' ')}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
-  const incident = incidents.find((one) => one.id === selected) ?? null;
+  const state = useWorkspace();
+  const {
+    data,
+    selected,
+    setSelected,
+    record,
+    setRecord,
+    query,
+    setQuery,
+    kind,
+    setKind,
+    sourceStatus,
+    setSourceStatus,
+    watchOnly,
+    setWatchOnly,
+    busy,
+    notice,
+    setNotice,
+    error,
+    setError,
+    drawer,
+    setDrawer,
+    scope,
+    setScope,
+    place,
+    setPlace,
+    locationsEnabled,
+    setLocationsEnabled,
+    layersOpen,
+    setLayersOpen,
+    expanded,
+    setExpanded,
+    command,
+    search,
+    act,
+    closeDetail,
+    choose,
+    openRecords,
+    national,
+    camera,
+    matches,
+    visible,
+    focused,
+    summary,
+    toggleDrawer,
+  } = state;
+
   return (
-    <div className="op-workspace">
+    <div
+      className={workspaceClass(Boolean(drawer), Boolean(focused), expanded)}
+      onKeyDown={(event) => {
+        const target = event.target as HTMLElement;
+        const editing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+        if (event.key === '/' && !editing) {
+          event.preventDefault();
+          search.current?.focus();
+        }
+        if (event.key === 'Escape' && !editing) {
+          if (focused) closeDetail();
+          else setDrawer(null);
+        }
+      }}
+    >
       <Globe
-        incidents={visible}
-        selected={record?.incidentSnapshot ?? incident}
-        onSelect={choose}
+        incidents={matches}
+        selected={focused}
+        locationsEnabled={locationsEnabled}
+        command={command}
+        onPlace={(ids, label) => {
+          closeDetail();
+          setPlace({ ids, label });
+          setScope('place');
+          setDrawer('events');
+        }}
+        onNational={national}
       />
-      <header className="op-header">
-        <div className="op-brand">
-          <span className="op-brand-icon">⌁</span>
-          <div>
-            VITALINK<small>PHARMACEUTICAL SUPPLY INTELLIGENCE</small>
-          </div>
-        </div>
-        <div className="op-header-center">
-          <span className={`op-dot ${data?.worker.online ? 'cyan' : 'amber'}`} />
-          {monitorLabel(data)}
-          <span className="op-divider" />
-          FDA / US REGULATORY COVERAGE
-        </div>
-        <div className="op-header-actions">
-          <button onClick={onTools}>Analysis tools ↗</button>
-          <button onClick={onSignOut}>Sign out</button>
-        </div>
-      </header>
-      <MonitorRail
-        data={data}
-        visible={visible}
-        selected={selected}
-        record={record}
+      <WorkspaceHeader
         query={query}
-        kind={kind}
-        sourceStatus={sourceStatus}
-        setSourceStatus={setSourceStatus}
-        watchOnly={watchOnly}
-        setQuery={setQuery}
-        setKind={(value) => {
-          setKind(value);
+        search={search}
+        drawer={drawer}
+        openCases={summary.openCases}
+        onSignOut={onSignOut}
+        onQuery={(value) => {
+          closeDetail();
+          setQuery(value);
+          setKind('ALL');
           setSourceStatus('ALL');
+          setWatchOnly(false);
+          setScope('all');
+          setDrawer('events');
         }}
-        setWatchOnly={setWatchOnly}
-        choose={choose}
-        openCase={(one) => {
-          setRecord(one);
-          setSelected(one.incidentId);
+        onRecords={() => {
+          closeDetail();
+          openRecords();
         }}
-        busy={busy}
-        act={act}
-        notice={setNotice}
+        onDrawer={toggleDrawer}
+        onCloseDrawer={() => {
+          setDrawer(null);
+        }}
       />
-      {(incident || record) && (
-        <aside className="op-detail op-panel">
-          <div className="op-detail-top">
-            <span>DISRUPTION WORKSPACE</span>
-            <button
-              aria-label="Close detail panel"
-              onClick={() => {
-                setSelected(null);
-                setRecord(null);
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <div className="op-detail-body">
-            {record ? (
-              <InvestigationPanel
-                key={record.id}
-                record={record}
-                busy={busy}
-                change={(body, action) => {
-                  void act(async () => {
-                    setRecord(await operations.change(record.id, body, action));
-                  });
-                }}
-              />
-            ) : (
-              incident && (
-                <Evidence
-                  incident={incident}
-                  busy={busy}
-                  onInvestigate={() => {
-                    void act(async () => {
-                      const existing = data?.investigations.find(
-                        (one) => one.incidentId === incident.id && one.status !== 'CLOSED',
-                      );
-                      setRecord(existing ?? (await operations.create(incident.id)));
-                    });
-                  }}
-                />
-              )
-            )}
-          </div>
-        </aside>
+      {!drawer && (
+        <LayerControl
+          open={layersOpen}
+          onToggle={() => {
+            setLayersOpen(!layersOpen);
+          }}
+          enabled={locationsEnabled}
+          onEnabled={setLocationsEnabled}
+          mapped={summary.mapped}
+          places={summary.places}
+          onMapped={() => {
+            closeDetail();
+            openRecords('mapped');
+          }}
+          onNational={national}
+        />
       )}
-      {!incident && !record && (
-        <div className="op-map-title">
-          <div className="op-section-label">OBSERVE → INVESTIGATE → RESPOND</div>
-          <h2>
-            Medicine supply,
-            <br />
-            <em>in context.</em>
-          </h2>
-          <p>
-            Select a regulatory event to inspect the evidence
-            <br />
-            and begin a traceable investigation.
-          </p>
-        </div>
+      {drawer && (
+        <MonitorRail
+          data={data}
+          visible={visible}
+          selected={selected}
+          record={record}
+          kind={kind}
+          sourceStatus={sourceStatus}
+          setSourceStatus={setSourceStatus}
+          watchOnly={watchOnly}
+          setKind={(value) => {
+            setKind(value);
+            setSourceStatus('ALL');
+            setScope('all');
+          }}
+          setWatchOnly={setWatchOnly}
+          choose={choose}
+          openCase={(one) => {
+            setRecord(one);
+            setSelected(one.incidentId);
+            setExpanded(false);
+            setDrawer(null);
+          }}
+          busy={busy}
+          act={act}
+          notice={setNotice}
+          mode={drawer}
+          setMode={setDrawer}
+          scope={scope}
+          setScope={setScope}
+          placeLabel={place.label}
+          close={() => {
+            setDrawer(null);
+          }}
+          query={query}
+        />
+      )}
+      {focused && <WorkspaceInspector state={state} />}
+      {!focused && !drawer && (
+        <ExplorePrompt shortages={summary.shortages} loaded={Boolean(data)} onNational={national} />
+      )}
+      {!drawer && !focused && (
+        <nav className="op-camera-controls" aria-label="Globe camera">
+          <button
+            onClick={() => {
+              camera('overview');
+            }}
+          >
+            Overview
+          </button>
+          <button
+            disabled={summary.mapped === 0 || !locationsEnabled}
+            onClick={() => {
+              camera('fit');
+            }}
+          >
+            Fit locations
+          </button>
+          <button
+            onClick={() => {
+              openRecords('unmapped');
+            }}
+          >
+            Unmapped records
+          </button>
+        </nav>
+      )}
+      {focused && (
+        <button className="op-return-globe" onClick={closeDetail}>
+          ← Return to globe
+        </button>
       )}
       {(error || notice || busy) && (
         <div className={`op-toast ${error ? 'error' : ''}`} role={error ? 'alert' : 'status'}>
-          {messageLabel(error, busy, notice)}
+          <span>{error ?? (busy ? 'Fetching public evidence…' : notice)}</span>
           <button
             aria-label="Dismiss message"
             onClick={() => {
@@ -195,24 +216,27 @@ export function Workspace({
           </button>
         </div>
       )}
-      <footer className="op-dock">
-        <span className="op-dot cyan" />
-        <b>REGULATORY INTELLIGENCE</b>
-        <span>FDA records</span>
-        <span>Evidence-linked analysis</span>
-        <span>Operator decisions</span>
-        <span className="op-dock-end">PUBLIC DATA ≠ PRIVATE INVENTORY</span>
-      </footer>
+      <WorkspaceFooter
+        online={summary.online}
+        loaded={Boolean(data)}
+        freshness={summary.freshness}
+        sourceErrors={summary.sourceErrors}
+        onSources={() => {
+          closeDetail();
+          setDrawer('sources');
+        }}
+        onTools={onTools}
+      />
     </div>
   );
 }
 
-function monitorLabel(data: Dashboard | null): string {
-  if (!data) return 'CONNECTING';
-  return data.worker.online ? 'MONITOR ONLINE' : 'WORKER OFFLINE';
-}
-
-function messageLabel(error: string | null, busy: boolean, notice: string | null): string | null {
-  if (error) return error;
-  return busy ? 'Working… Requests to public sources may take a moment.' : notice;
+function workspaceClass(drawer: boolean, focused: boolean, expanded: boolean): string {
+  return [
+    'op-workspace',
+    'op-globe-workspace',
+    drawer ? 'has-drawer' : '',
+    focused ? 'has-inspector' : '',
+    expanded ? 'inspector-expanded' : '',
+  ].join(' ');
 }

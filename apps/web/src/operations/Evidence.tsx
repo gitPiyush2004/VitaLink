@@ -7,16 +7,20 @@ export function Evidence({
   onInvestigate,
   busy,
   preserved = false,
+  snapshotLabel,
 }: {
   incident: Incident;
   onInvestigate: () => void;
   busy: boolean;
   preserved?: boolean;
+  snapshotLabel?: string;
 }): React.ReactElement {
+  const heading = incident.genericNames.length === 1 ? incident.genericNames[0] : incident.title;
   return (
     <>
       <div className="op-section-label">
-        {preserved ? 'Evidence preserved when this case opened' : 'Source evidence'}
+        {snapshotLabel ??
+          (preserved ? 'Evidence preserved when this case opened' : 'Source evidence')}
       </div>
       <div className="op-title-row">
         <span className={`op-tag ${incident.kind === 'RECALL' ? 'amber' : 'cyan'}`}>
@@ -24,7 +28,13 @@ export function Evidence({
         </span>
         <span className="op-mono">{incident.classification ?? incident.status}</span>
       </div>
-      <h2>{incident.title}</h2>
+      <h2 className="op-evidence-heading">{heading}</h2>
+      {incident.product !== heading && (
+        <details>
+          <summary>Full FDA product description</summary>
+          <p>{incident.product}</p>
+        </details>
+      )}
       <p className="op-company">{incident.company}</p>
       <p className="op-reason">{incident.reason || 'The source does not specify a reason.'}</p>
       <dl className="op-facts">
@@ -64,7 +74,7 @@ export function Evidence({
         </details>
       )}
       {incident.lots && (
-        <details>
+        <details open={incident.kind === 'RECALL'}>
           <summary>Lot / code scope</summary>
           <p>{incident.lots}</p>
         </details>

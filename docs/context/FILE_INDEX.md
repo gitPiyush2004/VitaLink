@@ -1,6 +1,6 @@
 # Repository file index
 
-413 versionable files outside this vault, each with a source note. Ignored secrets/runtime/dependencies and generated vault files are excluded. Notes include curated responsibility, extracted declarations/tests, static dependencies/consumers and source fingerprints. Coverage is checked by `npm run docs:context:check`.
+422 versionable files outside this vault, each with a source note. Ignored secrets/runtime/dependencies and generated vault files are excluded. Notes include curated responsibility, extracted declarations/tests, static dependencies/consumers and source fingerprints. Coverage is checked by `npm run docs:context:check`.
 
 [Start here](00_START_HERE.md) · [Architecture](03_SYSTEM_ARCHITECTURE.md) · [Current state](02_CURRENT_STATE.md) · [Validation](07_LOCAL_SETUP_AND_VALIDATION.md)
 
@@ -473,6 +473,8 @@ Presents the authenticated analyst workspace and earlier stage tools; source fac
 - [apps/web/index.html](files/apps--web--index.html.md)
 - [apps/web/nginx.conf](files/apps--web--nginx.conf.md)
 - [apps/web/package.json](files/apps--web--package.json.md)
+- [apps/web/public/maps/README.md](files/apps--web--public--maps--README.md.md)
+- [apps/web/public/maps/countries.geojson](files/apps--web--public--maps--countries.geojson.md)
 - [apps/web/src/App.tsx](files/apps--web--src--App.tsx.md)
 - [apps/web/src/api/client.ts](files/apps--web--src--api--client.ts.md)
 - [apps/web/src/api/overview.ts](files/apps--web--src--api--overview.ts.md)
@@ -499,12 +501,19 @@ Presents the authenticated analyst workspace and earlier stage tools; source fac
 - [apps/web/src/operations/SourcePanel.tsx](files/apps--web--src--operations--SourcePanel.tsx.md)
 - [apps/web/src/operations/TracePanel.tsx](files/apps--web--src--operations--TracePanel.tsx.md)
 - [apps/web/src/operations/Workspace.tsx](files/apps--web--src--operations--Workspace.tsx.md)
+- [apps/web/src/operations/WorkspaceChrome.tsx](files/apps--web--src--operations--WorkspaceChrome.tsx.md)
+- [apps/web/src/operations/WorkspaceInspector.tsx](files/apps--web--src--operations--WorkspaceInspector.tsx.md)
+- [apps/web/src/operations/**tests**/globe-data.test.ts](files/apps--web--src--operations--__tests__--globe-data.test.ts.md)
 - [apps/web/src/operations/**tests**/report.test.ts](files/apps--web--src--operations--__tests__--report.test.ts.md)
 - [apps/web/src/operations/api.ts](files/apps--web--src--operations--api.ts.md)
 - [apps/web/src/operations/candidates.css](files/apps--web--src--operations--candidates.css.md)
+- [apps/web/src/operations/globe-data.ts](files/apps--web--src--operations--globe-data.ts.md)
+- [apps/web/src/operations/globe-graticule.ts](files/apps--web--src--operations--globe-graticule.ts.md)
+- [apps/web/src/operations/globe-workspace.css](files/apps--web--src--operations--globe-workspace.css.md)
 - [apps/web/src/operations/operations.css](files/apps--web--src--operations--operations.css.md)
 - [apps/web/src/operations/report.ts](files/apps--web--src--operations--report.ts.md)
 - [apps/web/src/operations/source-history.ts](files/apps--web--src--operations--source-history.ts.md)
+- [apps/web/src/operations/useWorkspace.ts](files/apps--web--src--operations--useWorkspace.ts.md)
 - [apps/web/src/views/CascadeView.tsx](files/apps--web--src--views--CascadeView.tsx.md)
 - [apps/web/src/views/CatalogView.tsx](files/apps--web--src--views--CatalogView.tsx.md)
 - [apps/web/src/views/DecideView.tsx](files/apps--web--src--views--DecideView.tsx.md)

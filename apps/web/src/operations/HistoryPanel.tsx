@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { IncidentHistory } from '@vitalink/contracts';
 
 import { dateLabel, operations } from './api';
+import { Evidence } from './Evidence';
 import { sourceChanges } from './source-history';
 
 export function HistoryPanel({
@@ -15,10 +16,12 @@ export function HistoryPanel({
   const [history, setHistory] = useState<IncidentHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
+  const [versionId, setVersionId] = useState('');
   useEffect(() => {
     let active = true;
     setHistory(null);
     setError(null);
+    setVersionId('');
     void operations
       .history(incidentId)
       .then((value) => {
@@ -31,6 +34,7 @@ export function HistoryPanel({
       active = false;
     };
   }, [incidentId, refreshKey, revision]);
+  const selectedVersion = history?.versions.find((version) => version.id === versionId);
   return (
     <section className="op-history">
       <div className="op-title-row">
@@ -75,6 +79,42 @@ export function HistoryPanel({
             <p className="op-callout">
               Showing the 100 most recent retained versions. Earlier versions are outside this view.
             </p>
+          )}
+          {history.versions.length > 0 && (
+            <div className="op-version-inspector">
+              <label>
+                Inspect a retained source version
+                <select
+                  value={versionId}
+                  onChange={(event) => {
+                    setVersionId(event.target.value);
+                  }}
+                >
+                  <option value="">Select an observation</option>
+                  {history.versions.map((version) => (
+                    <option key={version.id} value={version.id}>
+                      {dateLabel(version.observedAt)} ·{' '}
+                      {version.origin === 'retained_before_tracking'
+                        ? 'Legacy observation'
+                        : 'Source refresh'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p>
+                Only recorded observations can be selected. Gaps are not interpolated; source fetch
+                times and fact dates remain separate.
+              </p>
+              {selectedVersion && (
+                <Evidence
+                  incident={selectedVersion.snapshot}
+                  preserved
+                  snapshotLabel="Selected retained source observation"
+                  busy
+                  onInvestigate={() => undefined}
+                />
+              )}
+            </div>
           )}
           {history.versions.length === 0 && (
             <p className="op-empty">
