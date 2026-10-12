@@ -1,6 +1,6 @@
 # Repository file index
 
-351 versionable files outside this vault, each with a source note. Ignored secrets/runtime/dependencies and generated vault files are excluded. Notes include curated responsibility, extracted declarations/tests, static dependencies/consumers and source fingerprints. Coverage is checked by `npm run docs:context:check`.
+361 versionable files outside this vault, each with a source note. Ignored secrets/runtime/dependencies and generated vault files are excluded. Notes include curated responsibility, extracted declarations/tests, static dependencies/consumers and source fingerprints. Coverage is checked by `npm run docs:context:check`.
 
 [Start here](00_START_HERE.md) · [Architecture](03_SYSTEM_ARCHITECTURE.md) · [Current state](02_CURRENT_STATE.md) · [Validation](07_LOCAL_SETUP_AND_VALIDATION.md)
 
@@ -171,6 +171,7 @@ Explains decisions, development history and limitations; historical intentions a
 - [docs/adr/0011-edges-follow-supply-flow.md](files/docs--adr--0011-edges-follow-supply-flow.md.md)
 - [docs/adr/0012-weight-profiles.md](files/docs--adr--0012-weight-profiles.md.md)
 - [docs/adr/0013-connected-regulatory-investigations.md](files/docs--adr--0013-connected-regulatory-investigations.md.md)
+- [docs/adr/0014-candidate-discovery-from-public-listings.md](files/docs--adr--0014-candidate-discovery-from-public-listings.md.md)
 
 ## evaluation
 
@@ -247,14 +248,21 @@ Derives shipment constraints, excludes infeasible/unknown-critical-capability ca
 Connects public regulatory incidents to organisation-scoped investigations, analysis, conditional response inputs and decision history.
 
 - [apps/api/src/modules/operations/README.md](files/apps--api--src--modules--operations--README.md.md)
+- [apps/api/src/modules/operations/**tests**/candidates.test.ts](files/apps--api--src--modules--operations--__tests__--candidates.test.ts.md)
+- [apps/api/src/modules/operations/**tests**/equivalence.test.ts](files/apps--api--src--modules--operations--__tests__--equivalence.test.ts.md)
 - [apps/api/src/modules/operations/**tests**/incidents.test.ts](files/apps--api--src--modules--operations--__tests__--incidents.test.ts.md)
 - [apps/api/src/modules/operations/**tests**/response-plan.test.ts](files/apps--api--src--modules--operations--__tests__--response-plan.test.ts.md)
+- [apps/api/src/modules/operations/**tests**/strength.test.ts](files/apps--api--src--modules--operations--__tests__--strength.test.ts.md)
+- [apps/api/src/modules/operations/domain/candidates.ts](files/apps--api--src--modules--operations--domain--candidates.ts.md)
+- [apps/api/src/modules/operations/domain/equivalence.ts](files/apps--api--src--modules--operations--domain--equivalence.ts.md)
 - [apps/api/src/modules/operations/domain/incidents.ts](files/apps--api--src--modules--operations--domain--incidents.ts.md)
 - [apps/api/src/modules/operations/domain/matching.ts](files/apps--api--src--modules--operations--domain--matching.ts.md)
 - [apps/api/src/modules/operations/domain/response-plan.ts](files/apps--api--src--modules--operations--domain--response-plan.ts.md)
+- [apps/api/src/modules/operations/domain/strength.ts](files/apps--api--src--modules--operations--domain--strength.ts.md)
 - [apps/api/src/modules/operations/index.ts](files/apps--api--src--modules--operations--index.ts.md)
 - [apps/api/src/modules/operations/models/operations.model.ts](files/apps--api--src--modules--operations--models--operations.model.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](files/apps--api--src--modules--operations--operations.analysis.ts.md)
+- [apps/api/src/modules/operations/operations.candidates.ts](files/apps--api--src--modules--operations--operations.candidates.ts.md)
 - [apps/api/src/modules/operations/operations.controller.ts](files/apps--api--src--modules--operations--operations.controller.ts.md)
 - [apps/api/src/modules/operations/operations.ingestion.ts](files/apps--api--src--modules--operations--operations.ingestion.ts.md)
 - [apps/api/src/modules/operations/operations.queue.ts](files/apps--api--src--modules--operations--operations.queue.ts.md)
@@ -431,6 +439,7 @@ Presents the authenticated analyst workspace and earlier stage tools; source fac
 - [apps/web/src/main.tsx](files/apps--web--src--main.tsx.md)
 - [apps/web/src/nav.ts](files/apps--web--src--nav.ts.md)
 - [apps/web/src/operations/Analysis.tsx](files/apps--web--src--operations--Analysis.tsx.md)
+- [apps/web/src/operations/CandidatesPanel.tsx](files/apps--web--src--operations--CandidatesPanel.tsx.md)
 - [apps/web/src/operations/Evidence.tsx](files/apps--web--src--operations--Evidence.tsx.md)
 - [apps/web/src/operations/Globe.tsx](files/apps--web--src--operations--Globe.tsx.md)
 - [apps/web/src/operations/InvestigationPanel.tsx](files/apps--web--src--operations--InvestigationPanel.tsx.md)
@@ -442,6 +451,7 @@ Presents the authenticated analyst workspace and earlier stage tools; source fac
 - [apps/web/src/operations/TracePanel.tsx](files/apps--web--src--operations--TracePanel.tsx.md)
 - [apps/web/src/operations/Workspace.tsx](files/apps--web--src--operations--Workspace.tsx.md)
 - [apps/web/src/operations/api.ts](files/apps--web--src--operations--api.ts.md)
+- [apps/web/src/operations/candidates.css](files/apps--web--src--operations--candidates.css.md)
 - [apps/web/src/operations/operations.css](files/apps--web--src--operations--operations.css.md)
 - [apps/web/src/views/CascadeView.tsx](files/apps--web--src--views--CascadeView.tsx.md)
 - [apps/web/src/views/CatalogView.tsx](files/apps--web--src--views--CatalogView.tsx.md)

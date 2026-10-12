@@ -78,6 +78,84 @@ export const analysisSchema = z.object({
 });
 export type InvestigationAnalysis = z.infer<typeof analysisSchema>;
 
+/**
+ * Candidate discovery.
+ *
+ * A candidate is **a product worth investigating**, never a substitution
+ * recommendation. The schema is shaped to make that distinction impossible to
+ * lose on the way to the screen: there is no aggregate score, every attribute
+ * carries its own three-valued verdict, and the evidence that would be needed
+ * to support an equivalence claim (`equivalence`) is a separate, nullable field
+ * sourced only from Drugs@FDA.
+ */
+export const attributeVerdictSchema = z.enum(['match', 'differs', 'unknown']);
+export type AttributeVerdict = z.infer<typeof attributeVerdictSchema>;
+
+export const candidateAttributeSchema = z.object({
+  attribute: z.enum(['ingredients', 'strength', 'dosageForm', 'route', 'marketingCategory']),
+  verdict: attributeVerdictSchema,
+  reference: z.string().nullable(),
+  candidate: z.string().nullable(),
+  /** Why this verdict, in the analyst's language. Always populated. */
+  note: z.string(),
+});
+export type CandidateAttribute = z.infer<typeof candidateAttributeSchema>;
+
+/**
+ * Approval evidence from Drugs@FDA. `teCode` is null whenever FDA publishes no
+ * code for the product, which is common and is **not** a finding of
+ * non-equivalence; `teCodeNote` says so wherever it is shown.
+ */
+export const equivalenceSchema = z.object({
+  applicationNumber: z.string(),
+  sponsor: z.string().nullable(),
+  teCode: z.string().nullable(),
+  teCodeNote: z.string(),
+  marketingStatus: z.string().nullable(),
+  isReferenceDrug: z.boolean(),
+});
+export type CandidateEquivalence = z.infer<typeof equivalenceSchema>;
+
+export const productCandidateSchema = z.object({
+  productNdc: z.string(),
+  genericName: z.string(),
+  brandName: z.string().nullable(),
+  labeler: z.string().nullable(),
+  ingredients: z.array(z.object({ name: z.string(), strength: z.string().nullable() })),
+  dosageForm: z.string().nullable(),
+  routes: z.array(z.string()),
+  marketingCategory: z.string().nullable(),
+  marketingStartDate: z.string().nullable(),
+  listingExpiryDate: z.string().nullable(),
+  attributes: z.array(candidateAttributeSchema),
+  /** Hard exclusions, kept separate from preferences. Empty means not excluded. */
+  exclusions: z.array(z.string()),
+  equivalence: equivalenceSchema.nullable(),
+  /** FDA's own reported shortage status for this product, where it publishes one. */
+  reportedShortage: z
+    .object({ status: z.string(), availability: z.string().nullable(), updatedAt: z.string() })
+    .nullable(),
+});
+export type ProductCandidate = z.infer<typeof productCandidateSchema>;
+
+export const candidateSetSchema = z.object({
+  createdAt: z.string(),
+  ingredient: z.string(),
+  referenceNdc: z.string().nullable(),
+  referenceLabel: z.string(),
+  /** Every candidate retrieved, excluded ones included and flagged. */
+  candidates: z.array(productCandidateSchema),
+  coverage: z.object({
+    reportedTotal: z.number().int(),
+    retrieved: z.number().int(),
+    truncated: z.boolean(),
+    equivalenceChecked: z.number().int(),
+  }),
+  sources: z.array(provenanceSchema),
+  limits: z.array(z.string()),
+});
+export type CandidateSet = z.infer<typeof candidateSetSchema>;
+
 const MAX_LABEL_LENGTH = 160;
 const MAX_EVIDENCE_LENGTH = 1000;
 const MIN_BASIS_LENGTH = 8;
@@ -156,6 +234,7 @@ export const investigationSchema = z.object({
   cascadeId: z.string().nullable().default(null),
   recommendationId: z.string().nullable().default(null),
   analysis: analysisSchema.nullable(),
+  candidates: candidateSetSchema.nullable().default(null),
   plan: responsePlanSchema.nullable(),
   notes: z.array(
     z.object({ id: z.string(), at: z.string(), author: z.string(), text: z.string() }),

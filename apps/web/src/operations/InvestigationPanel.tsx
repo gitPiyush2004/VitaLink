@@ -4,6 +4,7 @@ import type { Investigation } from '@vitalink/contracts';
 
 import { Analysis } from './Analysis';
 import { dateLabel } from './api';
+import { CandidatesPanel } from './CandidatesPanel';
 import { Evidence } from './Evidence';
 import { LogisticsPanel } from './LogisticsPanel';
 import { ResponsePlanner } from './ResponsePlanner';
@@ -22,9 +23,9 @@ export function InvestigationPanel({
     record.analysis?.drugName ?? record.incidentSnapshot.genericNames[0] ?? '',
   );
   const [note, setNote] = useState('');
-  const [tab, setTab] = useState<'analysis' | 'trace' | 'logistics' | 'response' | 'record'>(
-    'analysis',
-  );
+  const [tab, setTab] = useState<
+    'analysis' | 'alternatives' | 'trace' | 'logistics' | 'response' | 'record'
+  >('analysis');
   function exportRecord(): void {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }),
@@ -44,17 +45,19 @@ export function InvestigationPanel({
         <button onClick={exportRecord}>Export evidence ↓</button>
       </div>
       <nav className="op-tabs">
-        {(['analysis', 'trace', 'logistics', 'response', 'record'] as const).map((one) => (
-          <button
-            key={one}
-            aria-pressed={tab === one}
-            onClick={() => {
-              setTab(one);
-            }}
-          >
-            {one}
-          </button>
-        ))}
+        {(['analysis', 'alternatives', 'trace', 'logistics', 'response', 'record'] as const).map(
+          (one) => (
+            <button
+              key={one}
+              aria-pressed={tab === one}
+              onClick={() => {
+                setTab(one);
+              }}
+            >
+              {one}
+            </button>
+          ),
+        )}
       </nav>
       {tab === 'analysis' && (
         <>
@@ -102,6 +105,18 @@ export function InvestigationPanel({
           </details>
         </>
       )}
+      {tab === 'alternatives' &&
+        (record.analysis ? (
+          <CandidatesPanel
+            set={record.candidates}
+            busy={busy}
+            refresh={() => {
+              change({}, '/candidates');
+            }}
+          />
+        ) : (
+          <p className="op-empty">Identify a related medicine before discovering alternatives.</p>
+        ))}
       {tab === 'trace' &&
         (record.analysis ? (
           <TracePanel record={record} busy={busy} change={change} />

@@ -31,6 +31,7 @@ Other import specifiers: none.
 ## Static consumers
 
 - [apps/api/src/modules/operations/**tests**/incidents.test.ts](./apps--api--src--modules--operations--__tests__--incidents.test.ts.md)
+- [apps/api/src/modules/operations/domain/candidates.ts](./apps--api--src--modules--operations--domain--candidates.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
 
 ## Maintenance and verification

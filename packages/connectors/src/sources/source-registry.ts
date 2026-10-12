@@ -69,6 +69,21 @@ export const SOURCES: Record<SignalSource, SourceConfig> = {
     requiresKey: false,
     documentationUrl: 'https://open.fda.gov/apis/drug/enforcement/',
   },
+  // Approval records and therapeutic-equivalence codes. This is the only
+  // endpoint that publishes a TE code over an API; the Orange Book publishes the
+  // same codes as a downloadable archive, which gate 2 would reject as a bundled
+  // dataset. A product with no `te_code` here has none published — which is not
+  // the same as being rated non-equivalent, and must never be rendered as such.
+  openfda_drugsfda: {
+    id: 'openfda_drugsfda',
+    displayName: 'openFDA Drugs@FDA',
+    baseUrl: 'https://api.fda.gov/drug/drugsfda.json',
+    minIntervalMs: 250,
+    // Approval records change on submission, not continuously.
+    cacheTtlSeconds: 24 * SECONDS_PER_HOUR,
+    requiresKey: false,
+    documentationUrl: 'https://open.fda.gov/apis/drug/drugsfda/',
+  },
   openfda_shortages: {
     id: 'openfda_shortages',
     displayName: 'openFDA Drug Shortages',

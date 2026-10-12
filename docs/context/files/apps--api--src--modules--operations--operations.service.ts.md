@@ -16,19 +16,20 @@ Orchestrates case lifecycle, analysis invalidation, conditional trace/response, 
 
 ## Source structure
 
-- `updateDescription` — FunctionDeclaration, [line 14](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L14).
-- `OperationsService` — ClassDeclaration, [line 27](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L27).
-- `OperationsService.dashboard` — method, [line 33](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L33).
-- `OperationsService.get` — method, [line 43](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L43).
-- `OperationsService.create` — method, [line 49](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L49).
-- `OperationsService.save` — method, [line 72](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L72).
-- `OperationsService.analyse` — method, [line 89](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L89).
-- `OperationsService.trace` — method, [line 107](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L107).
-- `OperationsService.linkRecommendation` — method, [line 139](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L139).
-- `OperationsService.plan` — method, [line 166](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L166).
-- `OperationsService.update` — method, [line 188](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L188).
-- `OperationsService.watch` — method, [line 220](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L220).
-- `OperationsService.removeWatch` — method, [line 226](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L226).
+- `updateDescription` — FunctionDeclaration, [line 15](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L15).
+- `OperationsService` — ClassDeclaration, [line 28](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L28).
+- `OperationsService.dashboard` — method, [line 35](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L35).
+- `OperationsService.get` — method, [line 45](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L45).
+- `OperationsService.create` — method, [line 51](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L51).
+- `OperationsService.save` — method, [line 75](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L75).
+- `OperationsService.analyse` — method, [line 92](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L92).
+- `OperationsService.discoverCandidates` — method, [line 118](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L118).
+- `OperationsService.trace` — method, [line 137](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L137).
+- `OperationsService.linkRecommendation` — method, [line 169](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L169).
+- `OperationsService.plan` — method, [line 196](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L196).
+- `OperationsService.update` — method, [line 218](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L218).
+- `OperationsService.watch` — method, [line 250](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L250).
+- `OperationsService.removeWatch` — method, [line 256](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/operations/operations.service.ts#L256).
 
 ## Static dependencies
 
@@ -37,6 +38,7 @@ Orchestrates case lifecycle, analysis invalidation, conditional trace/response, 
 - [apps/api/src/modules/logistics/index.ts](./apps--api--src--modules--logistics--index.ts.md)
 - [apps/api/src/modules/operations/domain/response-plan.ts](./apps--api--src--modules--operations--domain--response-plan.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
+- [apps/api/src/modules/operations/operations.candidates.ts](./apps--api--src--modules--operations--operations.candidates.ts.md)
 - [apps/api/src/modules/operations/operations.repository.ts](./apps--api--src--modules--operations--operations.repository.ts.md)
 - [apps/api/src/shared/errors/index.ts](./apps--api--src--shared--errors--index.ts.md)
 - [packages/contracts/src/index.ts](./packages--contracts--src--index.ts.md)
@@ -52,6 +54,6 @@ Other import specifiers: `node:crypto`.
 
 Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
 
-Source SHA-256: `b3579a47c8fba2a71e347894d6665c87cbe6b5074f9d790e7d660fef54ed9f65`.
+Source SHA-256: `ab4ab3fe3152067a936abd525096242f0c81397d1286c43868b7fa542f127429`.
 
 Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

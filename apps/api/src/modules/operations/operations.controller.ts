@@ -27,8 +27,12 @@ function id(req: Request): string {
 }
 function commands(
   service: OperationsService,
-): Record<'create' | 'analyse' | 'plan', RequestHandler> {
+): Record<'create' | 'analyse' | 'candidates' | 'plan', RequestHandler> {
   return {
+    candidates: async (req, res) => {
+      const auth = identity(req);
+      sendOk(res, await service.discoverCandidates(auth.org, auth.sub, id(req)));
+    },
     create: async (req, res) => {
       const auth = identity(req);
       sendCreated(

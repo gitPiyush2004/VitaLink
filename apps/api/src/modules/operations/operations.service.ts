@@ -9,6 +9,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@shared/errors';
 
 import { compareResponses } from './domain/response-plan';
 import type { InvestigationAnalyser } from './operations.analysis';
+import type { CandidateDiscovery } from './operations.candidates';
 import type { OperationsRepository } from './operations.repository';
 
 function updateDescription(input: {
@@ -28,6 +29,7 @@ export class OperationsService {
   constructor(
     private readonly repo: OperationsRepository,
     private readonly analyser: InvestigationAnalyser,
+    private readonly discovery: CandidateDiscovery,
   ) {}
 
   async dashboard(org: string) {
@@ -61,6 +63,7 @@ export class OperationsService {
       cascadeId: null,
       recommendationId: null,
       analysis: null,
+      candidates: null,
       plan: null,
       notes: [],
       history: [{ at, action: 'Investigation opened; source evidence preserved.', author }],
@@ -95,12 +98,39 @@ export class OperationsService {
       {
         ...record,
         analysis,
+        candidates: null,
         plan: null,
         cascadeId: null,
         recommendationId: null,
         status: 'INVESTIGATING',
       },
-      `Analysed ${analysis.drugName}; any earlier response comparison was cleared.`,
+      `Analysed ${analysis.drugName}; any earlier candidate comparison and response comparison were cleared.`,
+    );
+  }
+
+  /**
+   * Discovers products sharing the investigated medicine's active ingredient.
+   *
+   * A candidate set is evidence for investigation, never a substitution
+   * recommendation, so the history entry says what was found rather than what
+   * should be done.
+   */
+  async discoverCandidates(org: string, author: string, id: string): Promise<Investigation> {
+    const record = await this.get(org, id);
+    if (!record.analysis) {
+      throw new ValidationError('Identify a related medicine before discovering candidates.');
+    }
+    const { reference, provenance } = await this.discovery.reference({
+      productNdcs: record.incidentSnapshot.productNdcs,
+      genericName: record.analysis.drugName,
+    });
+    const candidates = await this.discovery.discover(reference, provenance);
+    const usable = candidates.candidates.filter((one) => one.exclusions.length === 0).length;
+    return this.save(
+      org,
+      author,
+      { ...record, candidates },
+      `Candidate discovery on ${reference.ingredient}: ${String(candidates.candidates.length)} FDA listings retrieved, ${String(usable)} without a disqualifying exclusion. Listings are not offers or stock.`,
     );
   }
 

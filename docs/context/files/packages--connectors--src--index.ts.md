@@ -34,6 +34,7 @@ Other import specifiers: none.
 - [apps/api/src/modules/operations/domain/incidents.ts](./apps--api--src--modules--operations--domain--incidents.ts.md)
 - [apps/api/src/modules/operations/index.ts](./apps--api--src--modules--operations--index.ts.md)
 - [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
+- [apps/api/src/modules/operations/operations.candidates.ts](./apps--api--src--modules--operations--operations.candidates.ts.md)
 - [apps/api/src/modules/operations/operations.ingestion.ts](./apps--api--src--modules--operations--operations.ingestion.ts.md)
 - [apps/api/src/modules/signals/domain/extraction.ts](./apps--api--src--modules--signals--domain--extraction.ts.md)
 - [apps/api/src/modules/signals/domain/ingest-mappers.ts](./apps--api--src--modules--signals--domain--ingest-mappers.ts.md)

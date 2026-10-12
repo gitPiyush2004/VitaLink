@@ -85,8 +85,47 @@ export const ndcProductSchema = z.object({
     .optional(),
   pharm_class: z.array(z.string()).optional(),
   finished: z.boolean().optional(),
+  /** Links an NDC listing to its Drugs@FDA approval record, where one exists. */
+  application_number: z.string().optional(),
+  /** YYYYMMDD. The listing's own dates, not an availability statement. */
+  marketing_start_date: z.string().optional(),
+  listing_expiration_date: z.string().optional(),
+  product_type: z.string().optional(),
 });
 export type NdcProduct = z.infer<typeof ndcProductSchema>;
+
+/**
+ * Drugs@FDA — approval records, therapeutic-equivalence codes and marketing
+ * status.
+ *
+ * `te_code` is absent on a large share of products (40 of 65 heparin products
+ * carried one in the probe run). Absent means **no code published**, and the
+ * caller must not read it as "not therapeutically equivalent". `products[]` is
+ * per approved product within one application, so one record can describe
+ * several strengths with different statuses.
+ */
+export const drugsFdaSchema = z.object({
+  application_number: z.string(),
+  sponsor_name: z.string().optional(),
+  products: z
+    .array(
+      z.object({
+        product_number: z.string().optional(),
+        brand_name: z.string().optional(),
+        dosage_form: z.string().optional(),
+        route: z.string().optional(),
+        marketing_status: z.string().optional(),
+        te_code: z.string().optional(),
+        reference_drug: z.string().optional(),
+        reference_standard: z.string().optional(),
+        active_ingredients: z
+          .array(z.object({ name: z.string(), strength: z.string().optional() }))
+          .optional(),
+      }),
+    )
+    .optional(),
+});
+export type DrugsFdaRecord = z.infer<typeof drugsFdaSchema>;
 
 export const labelSchema = z.object({
   id: z.string().optional(),
@@ -188,6 +227,7 @@ const ENDPOINTS = {
   label: 'openfda_label',
   enforcement: 'openfda_enforcement',
   shortages: 'openfda_shortages',
+  drugsfda: 'openfda_drugsfda',
 } as const;
 
 type EndpointName = keyof typeof ENDPOINTS;
@@ -216,6 +256,10 @@ export class OpenFdaClient {
 
   searchShortages(query: OpenFdaQuery): Promise<Fetched<ShortageRecord[]>> {
     return this.search('shortages', query, shortageSchema);
+  }
+
+  searchDrugsFda(query: OpenFdaQuery): Promise<Fetched<DrugsFdaRecord[]>> {
+    return this.search('drugsfda', query, drugsFdaSchema);
   }
 
   /**

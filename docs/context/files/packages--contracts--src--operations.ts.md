@@ -24,23 +24,33 @@ Defines incidents, coverage/worker health, matching, analysis, cases, watches, r
 - `IncidentMatch` — TypeAliasDeclaration, [line 61](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L61).
 - `analysisSchema` — binding, [line 63](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L63).
 - `InvestigationAnalysis` — TypeAliasDeclaration, [line 79](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L79).
-- `MAX_LABEL_LENGTH` — binding, [line 81](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L81).
-- `MAX_EVIDENCE_LENGTH` — binding, [line 82](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L82).
-- `MIN_BASIS_LENGTH` — binding, [line 83](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L83).
-- `MAX_OPTIONS` — binding, [line 84](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L84).
-- `MAX_WATCH_LENGTH` — binding, [line 85](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L85).
-- `MIN_WATCH_LENGTH` — binding, [line 86](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L86).
-- `MAX_DAYS` — binding, [line 87](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L87).
-- `MAX_COST` — binding, [line 88](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L88).
-- `responseOptionSchema` — binding, [line 89](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L89).
-- `responsePlanInputSchema` — binding, [line 112](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L112).
-- `ResponsePlanInput` — TypeAliasDeclaration, [line 130](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L130).
-- `responsePlanSchema` — binding, [line 131](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L131).
-- `ResponsePlan` — TypeAliasDeclaration, [line 146](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L146).
-- `investigationSchema` — binding, [line 148](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L148).
-- `Investigation` — TypeAliasDeclaration, [line 165](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L165).
-- `watchSchema` — binding, [line 167](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L167).
-- `Watch` — TypeAliasDeclaration, [line 173](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L173).
+- `attributeVerdictSchema` — binding, [line 91](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L91).
+- `AttributeVerdict` — TypeAliasDeclaration, [line 92](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L92).
+- `candidateAttributeSchema` — binding, [line 94](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L94).
+- `CandidateAttribute` — TypeAliasDeclaration, [line 102](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L102).
+- `equivalenceSchema` — binding, [line 109](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L109).
+- `CandidateEquivalence` — TypeAliasDeclaration, [line 117](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L117).
+- `productCandidateSchema` — binding, [line 119](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L119).
+- `ProductCandidate` — TypeAliasDeclaration, [line 139](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L139).
+- `candidateSetSchema` — binding, [line 141](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L141).
+- `CandidateSet` — TypeAliasDeclaration, [line 157](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L157).
+- `MAX_LABEL_LENGTH` — binding, [line 159](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L159).
+- `MAX_EVIDENCE_LENGTH` — binding, [line 160](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L160).
+- `MIN_BASIS_LENGTH` — binding, [line 161](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L161).
+- `MAX_OPTIONS` — binding, [line 162](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L162).
+- `MAX_WATCH_LENGTH` — binding, [line 163](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L163).
+- `MIN_WATCH_LENGTH` — binding, [line 164](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L164).
+- `MAX_DAYS` — binding, [line 165](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L165).
+- `MAX_COST` — binding, [line 166](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L166).
+- `responseOptionSchema` — binding, [line 167](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L167).
+- `responsePlanInputSchema` — binding, [line 190](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L190).
+- `ResponsePlanInput` — TypeAliasDeclaration, [line 208](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L208).
+- `responsePlanSchema` — binding, [line 209](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L209).
+- `ResponsePlan` — TypeAliasDeclaration, [line 224](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L224).
+- `investigationSchema` — binding, [line 226](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L226).
+- `Investigation` — TypeAliasDeclaration, [line 244](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L244).
+- `watchSchema` — binding, [line 246](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L246).
+- `Watch` — TypeAliasDeclaration, [line 252](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/operations.ts#L252).
 
 ## Static dependencies
 
@@ -58,6 +68,6 @@ Other import specifiers: `zod`.
 
 Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
 
-Source SHA-256: `7d19e8c5a1666690890bcf008e8c17f59aad4d6cb64baf7347d15263671cd900`.
+Source SHA-256: `10161b2f80069d95a2ed08807fafb2f360751bdc03fd8f54869d1a46f264b85e`.
 
 Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

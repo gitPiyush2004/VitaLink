@@ -8,6 +8,7 @@ import { Globe } from './Globe';
 import { InvestigationPanel } from './InvestigationPanel';
 import { MonitorRail } from './MonitorRail';
 import './operations.css';
+import './candidates.css';
 
 const POLL_MS = 15000;
 export function Workspace({

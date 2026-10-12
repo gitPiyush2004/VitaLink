@@ -40,6 +40,12 @@ export function createOperationsRouter(): Router {
     c.analyse,
   );
   router.post(
+    '/investigations/:id/candidates',
+    requireScope('cases:write'),
+    validate({ params: idParams }),
+    c.candidates,
+  );
+  router.post(
     '/investigations/:id/plan',
     requireScope('cases:write'),
     validate({ params: idParams, body: planBody }),

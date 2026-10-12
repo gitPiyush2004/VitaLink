@@ -40,3 +40,7 @@ venv/
 data/
 *.log
 logs/
+
+# Generated report: regenerable, and large. Share the file directly rather
+# than carrying a binary in git history.
+VitaLink-Project-Explained.pdf

@@ -22,7 +22,8 @@ consumers and fingerprints. Open `docs/context` as an Obsidian vault or read the
 same notes on GitHub. The overview was authored through the official Obsidian CLI.
 
 The review is the final review of **academic Phase 1**. Alternative-product
-discovery, public cost benchmarks and road-route exposure comparison are
+discovery is built and runs against live openFDA. Public cost benchmarks and
+road-route exposure comparison remain
 [proposed additions](docs/context/06_REVIEW_AND_ROADMAP.md), not completed features.
 
 ---
@@ -143,17 +144,18 @@ config with the flag on.
 
 ## The loop
 
-| Stage      | What it does                                                           | Where                              |
-| ---------- | ---------------------------------------------------------------------- | ---------------------------------- |
-| 1 SENSE    | Pulls openFDA enforcement, openFDA shortages, GDELT news               | `modules/signals`                  |
-| 2 VERIFY   | Deduplicates, clusters, corroborates, scores veracity, quarantines     | `modules/signals`                  |
-| 3 MAP      | Builds ingredient/labeler associations from openFDA catalogue evidence | `modules/catalog`, `modules/graph` |
-| 4 TRACE    | Propagates one shock forward, accumulating exposure over every path    | `modules/cascade`                  |
-| 5 QUANTIFY | Tucker & Daskin availability model, in Python                          | `apps/brain`                       |
-| 6 SIMULATE | Builds the joint (sourcing × logistics) scenario matrix                | `modules/scenarios`                |
-| 7 DECIDE   | Pareto front, then a weighted objective over it                        | `modules/scenarios`                |
-| 8 EXECUTE  | Carrier eligibility, scoring and a recorded recommendation; no booking | `modules/logistics`                |
-| 9 LEARN    | Not built. See "What is not here".                                     | —                                  |
+| Stage           | What it does                                                                              | Where                              |
+| --------------- | ----------------------------------------------------------------------------------------- | ---------------------------------- |
+| 1 SENSE         | Pulls openFDA enforcement, openFDA shortages, GDELT news                                  | `modules/signals`                  |
+| 2 VERIFY        | Deduplicates, clusters, corroborates, scores veracity, quarantines                        | `modules/signals`                  |
+| 3 MAP           | Builds ingredient/labeler associations from openFDA catalogue evidence                    | `modules/catalog`, `modules/graph` |
+| 3b ALTERNATIVES | Discovers products sharing the active ingredient and compares them attribute by attribute | `modules/operations`               |
+| 4 TRACE         | Propagates one shock forward, accumulating exposure over every path                       | `modules/cascade`                  |
+| 5 QUANTIFY      | Tucker & Daskin availability model, in Python                                             | `apps/brain`                       |
+| 6 SIMULATE      | Builds the joint (sourcing × logistics) scenario matrix                                   | `modules/scenarios`                |
+| 7 DECIDE        | Pareto front, then a weighted objective over it                                           | `modules/scenarios`                |
+| 8 EXECUTE       | Carrier eligibility, scoring and a recorded recommendation; no booking                    | `modules/logistics`                |
+| 9 LEARN         | Not built. See "What is not here".                                                        | —                                  |
 
 ---
 
@@ -235,7 +237,7 @@ npm run verify
 
 Runs, in order: Prettier, ESLint at `--max-warnings 0`, TypeScript across three
 projects, TypeScript tests, five CI gates and context-documentation checks.
-The connected implementation passed 337 TypeScript tests across 21 files.
+With candidate discovery added, this passes 368 TypeScript tests across 24 files.
 
 ```bash
 cd apps/brain && python -m pytest      # 118 tests in the connected implementation, including GATE 4
@@ -259,7 +261,7 @@ module copies its layout exactly. `modules/logistics/README.md` and
 `modules/scenarios/README.md` each explain their own design decisions and the
 mistakes that produced them.
 
-The thirteen ADRs in `docs/adr/` record the decisions that could reasonably have
+The fourteen ADRs in `docs/adr/` record the decisions that could reasonably have
 gone the other way, including the two that contradict the specification.
 
 ---

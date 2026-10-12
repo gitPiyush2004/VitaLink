@@ -92,6 +92,7 @@ export const SIGNAL_SOURCES = [
   'openfda_shortages',
   'openfda_ndc',
   'openfda_label',
+  'openfda_drugsfda',
   'dailymed_spl',
   'cdsco_alerts',
   'gdelt_doc',

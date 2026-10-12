@@ -10,18 +10,23 @@ Substantial implementation work connects the earlier engines into persistent cas
 
 A convincing public-data review does not require a fictional supplier or hospital. It can demonstrate a real investigation end to end. Conditional stock/offer forms should be described as optional operational extensions; without organisational inputs they are not a live procurement outcome.
 
+## Completed since this list was written
+
+**Priority 1, product candidate comparison.** Implemented against live openFDA and exercised end to end. Candidates are retrieved by active ingredient and compared against the investigated listing on ingredients, strength, dosage form, administration route and marketing category, each with its own `match`/`differs`/`unknown` verdict and no aggregate score. Drugs@FDA supplies approval, therapeutic-equivalence and marketing status; FDA's own reported shortage status is attached per listing; hard exclusions are stored apart from attribute differences; coverage and retrieval limits are reported. See [ADR 0014](../adr/0014-candidate-discovery-from-public-listings.md) and the [operations module README](../../apps/api/src/modules/operations/README.md).
+
+Two parts of the original criterion are **not** met and should not be claimed. _Release characteristics_ are not compared, because no integrated source supplies them — DailyMed would be the addition. _Matching quality is unmeasured_: there is no manually audited set, so this is a working comparison with explicit evidence, not a validated one. That measurement is priority 6.
+
 ## Recommended next build, not implemented yet
 
-| Priority | Feature                                    | Completion evidence                                                                                                                                                |
-| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1        | Product candidate comparison               | Source-backed matching on ingredient, strength, form, route and release; explicit mismatches, reported availability and unknowns; no unsupported equivalence claim |
-| 2        | Event/product change history               | Timestamped source versions and a readable change view; distinguish changed facts from refresh times                                                               |
-| 3        | Investigation report suitable for review   | Evidence, sources, limits, candidate reasoning and decision record in one readable export; current export is JSON                                                  |
-| 4        | Dated public cost benchmarks where covered | Verified product/unit alignment; displayed source date; benchmark clearly distinct from an offer                                                                   |
-| 5        | Narrow US road-route exposure comparison   | User-specified verified endpoints, appropriate vehicle routing, actual returned alternatives, hazard overlap and missing coverage; no invented closure/delay       |
-| 6        | Follow-up evaluation                       | Source-backed outcomes and a manually audited relevance/matching set; dated snapshots to prevent hindsight leakage                                                 |
+| Priority | Feature                                    | Completion evidence                                                                                                                                          |
+| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2        | Event/product change history               | Timestamped source versions and a readable change view; distinguish changed facts from refresh times                                                         |
+| 3        | Investigation report suitable for review   | Evidence, sources, limits, candidate reasoning and decision record in one readable export; current export is JSON                                            |
+| 4        | Dated public cost benchmarks where covered | Verified product/unit alignment; displayed source date; benchmark clearly distinct from an offer                                                             |
+| 5        | Narrow US road-route exposure comparison   | User-specified verified endpoints, appropriate vehicle routing, actual returned alternatives, hazard overlap and missing coverage; no invented closure/delay |
+| 6        | Follow-up evaluation                       | Source-backed outcomes and a manually audited relevance/matching set; dated snapshots to prevent hindsight leakage                                           |
 
-These priorities follow [competitor research](10_COMPETITOR_RESEARCH.md). The route connector already exists, but a safe and useful route workflow still needs endpoint, profile, hazard, coverage and UI work. Product matching within a case is not yet an alternate-product discovery engine.
+These priorities follow [competitor research](10_COMPETITOR_RESEARCH.md). The route connector already exists, but a safe and useful route workflow still needs endpoint, profile, hazard, coverage and UI work.
 
 ## Later operational mode
 

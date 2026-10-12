@@ -8,7 +8,8 @@ Read [the context entry point](docs/context/00_START_HERE.md), especially curren
 - Do not fabricate supplier offers, hospital inventory, facilities, routes, carrier prices or exposure numbers. Preserve unknowns and source coverage.
 - Retain REAL/DERIVED/MODELLED/SCENARIO provenance. Labeler associations do not prove API suppliers or plants. Recall applicability remains limited by identifiers and lots.
 - Keep mock carrier mode off for real-data operation. Five carrier adapters are unavailable stubs; DSV quote mapping is unverified. Environment fields alone do not complete integrations.
-- Candidate discovery, cost benchmarks and route-exposure comparison are proposed additions, not completed workflows. Do not claim substitution equivalence or predict delays without applicable evidence and validation.
+- Candidate discovery is built. A candidate is a product worth investigating, never a substitution recommendation: keep the per-attribute `match`/`differs`/`unknown` verdicts, never introduce an aggregate score, and never render an absent therapeutic-equivalence code as non-equivalence. Compare strengths as normalised concentrations; an unreadable strength is `unknown`, not a match.
+- Cost benchmarks and route-exposure comparison are proposed additions, not completed workflows. Do not predict delays without applicable evidence and validation.
 
 ## Implementation conventions
 

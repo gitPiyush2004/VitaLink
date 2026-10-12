@@ -20,6 +20,16 @@ Operations routes/controllers validate and authorise creation. `operations.servi
 
 Reanalysis invalidates the prior trace, recommendations and response plan because they referred to the old medicine context.
 
+## 3b. Discover and compare product candidates
+
+`operations.candidates.ts` builds a baseline from the incident's own product NDC, then queries openFDA by that listing's active ingredient. `domain/candidates.ts` produces one verdict per attribute; `domain/strength.ts` compares printed strengths as normalised concentrations; `domain/equivalence.ts` resolves a Drugs@FDA approval onto the listing and withholds a therapeutic-equivalence code when the matching approved products disagree.
+
+`CandidatesPanel.tsx` draws each candidate as five coloured segments — match, differs, not stated — so the comparison is readable before any prose, with the justifying notes folded into the expanded row. Excluded listings remain visible with their reason.
+
+Reanalysing a medicine clears the candidate set, because it was computed against the previous medicine context.
+
+Nothing in this workflow establishes stock, a supplier offer, a price, or substitutability.
+
 ## 4. Trace a stated upstream disruption
 
 The analyst selects a related upstream node and supplies disruption duration and days of cover with their basis. The service rebuilds a coherent trace context and calls `cascade.service.ts`. Traversal follows supply-flow direction and accumulates bounded exposure across paths; supply cover is conditional on the supplied input.

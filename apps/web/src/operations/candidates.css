@@ -1,0 +1,389 @@
+/*
+ * Alternatives — the candidate comparison surface.
+ *
+ * The screen has to carry a hundred products without becoming a spreadsheet, so
+ * the evidence is drawn rather than written: five coloured segments per row say
+ * how a listing compares before a word is read, and the prose that justifies
+ * each verdict stays folded away until the row is opened.
+ *
+ * Colour carries one meaning only. Cyan is a confirmed match, amber is a stated
+ * difference, and slate is an absence of evidence — never green/red, because
+ * "differs" is a fact for the analyst to weigh, not a failure, and "not stated"
+ * must never read as either.
+ */
+
+.op-workspace .cx {
+  --cx-match: #00d4ff;
+  --cx-differs: #e0a34a;
+  --cx-unknown: #3c4d63;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+/* ---- Baseline -------------------------------------------------------- */
+
+.op-workspace .cx-baseline {
+  position: relative;
+  padding: 14px 16px;
+  border: 1px solid var(--op-line);
+  border-left: 2px solid var(--cx-match);
+  border-radius: 5px;
+  background: linear-gradient(100deg, rgba(0, 212, 255, 0.09), rgba(0, 212, 255, 0) 62%);
+}
+.op-workspace .cx-baseline-tag {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--cx-match);
+}
+.op-workspace .cx-baseline h4 {
+  margin: 5px 0 3px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+}
+.op-workspace .cx-baseline-ndc {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  color: var(--op-muted);
+}
+
+/* ---- Headline count -------------------------------------------------- */
+
+.op-workspace .cx-count {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.op-workspace .cx-count strong {
+  font-size: 40px;
+  font-weight: 200;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.op-workspace .cx-count span {
+  font-size: 11px;
+  color: var(--op-muted);
+  max-width: 24ch;
+}
+
+/* ---- Filters --------------------------------------------------------- */
+
+.op-workspace .cx-filters {
+  display: flex;
+  gap: 6px;
+}
+.op-workspace .cx-filters button {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  border-color: var(--op-line);
+}
+.op-workspace .cx-filters button b {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: #e8eaed;
+  font-variant-numeric: tabular-nums;
+}
+.op-workspace .cx-filters button[aria-pressed='true'] {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: var(--cx-match);
+  color: var(--cx-match);
+}
+.op-workspace .cx-filters button[aria-pressed='true'] b {
+  color: var(--cx-match);
+}
+.op-workspace .cx-filters .cx-refresh {
+  flex: 0 0 34px;
+}
+
+/* ---- Signature ------------------------------------------------------- */
+
+.op-workspace .cx-sig {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.op-workspace .cx-seg {
+  width: 4px;
+  height: 17px;
+  border-radius: 1px;
+  background: var(--cx-unknown);
+}
+.op-workspace .cx-seg.match {
+  background: var(--cx-match);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.55);
+}
+.op-workspace .cx-seg.differs {
+  background: var(--cx-differs);
+}
+
+.op-workspace .cx-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--op-muted);
+}
+.op-workspace .cx-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.op-workspace .cx-legend .cx-seg {
+  height: 9px;
+}
+.op-workspace .cx-legend-order {
+  flex-basis: 100%;
+  opacity: 0.65;
+  letter-spacing: 0.05em;
+}
+
+/* ---- Rows ------------------------------------------------------------ */
+
+.op-workspace .cx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--op-line);
+}
+.op-workspace .cx-row {
+  border-bottom: 1px solid var(--op-line);
+}
+.op-workspace .cx-row .cx-head {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+}
+.op-workspace .cx-row .cx-head:hover {
+  background: rgba(0, 212, 255, 0.05);
+}
+.op-workspace .cx-ndc {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.op-workspace .cx-maker {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--op-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.op-workspace .cx-flags {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.op-workspace .cx-te {
+  padding: 2px 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--cx-match);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  border-radius: 3px;
+}
+.op-workspace .cx-ex {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--op-muted);
+}
+
+/* FDA reports a shortage against this listing. */
+.op-workspace .cx-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cx-differs);
+  box-shadow: 0 0 0 0 rgba(224, 163, 74, 0.7);
+  animation: cx-pulse 2.4s infinite;
+}
+@keyframes cx-pulse {
+  70% {
+    box-shadow: 0 0 0 7px rgba(224, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 163, 74, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .op-workspace .cx-pulse {
+    animation: none;
+  }
+}
+
+.op-workspace .cx-row.excluded .cx-ndc,
+.op-workspace .cx-row.excluded .cx-maker {
+  color: #566a82;
+}
+.op-workspace .cx-row.excluded .cx-sig {
+  opacity: 0.4;
+}
+.op-workspace .cx-row.open {
+  background: rgba(13, 24, 38, 0.72);
+}
+.op-workspace .cx-row.open .cx-head {
+  border-left: 2px solid var(--cx-match);
+  padding-left: 10px;
+}
+
+/* ---- Expanded detail ------------------------------------------------- */
+
+.op-workspace .cx-detail {
+  padding: 2px 10px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.op-workspace .cx-exline {
+  margin: 0;
+  padding: 7px 9px;
+  font-size: 11px;
+  color: #e3c08a;
+  background: rgba(224, 163, 74, 0.09);
+  border-left: 2px solid var(--cx-differs);
+  border-radius: 3px;
+}
+.op-workspace .cx-attrs {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.op-workspace .cx-attr {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px;
+  padding: 7px 0 7px 9px;
+  border-left: 2px solid var(--cx-unknown);
+}
+.op-workspace .cx-attr.match {
+  border-left-color: var(--cx-match);
+}
+.op-workspace .cx-attr.differs {
+  border-left-color: var(--cx-differs);
+}
+.op-workspace .cx-attr dt {
+  font-size: 8.5px;
+  letter-spacing: 0.15em;
+  color: var(--op-muted);
+  padding-top: 2px;
+}
+.op-workspace .cx-attr dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.op-workspace .cx-val {
+  font-size: 12px;
+  color: #e8eaed;
+}
+.op-workspace .cx-ref {
+  font-size: 10px;
+  color: var(--cx-differs);
+}
+.op-workspace .cx-attr small {
+  font-size: 10px;
+  line-height: 1.45;
+  color: #7f91a7;
+}
+
+.op-workspace .cx-te-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--op-line);
+  border-radius: 4px;
+  background: #0b1421;
+}
+.op-workspace .cx-te-block span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cfe0f0;
+}
+.op-workspace .cx-te-block small {
+  font-size: 10px;
+  line-height: 1.45;
+  color: #7f91a7;
+}
+.op-workspace .cx-src {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--cx-match);
+}
+
+/* ---- Empty state, limits -------------------------------------------- */
+
+.op-workspace .cx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 26px 0;
+}
+.op-workspace .cx-empty p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: #cfe0f0;
+  max-width: 34ch;
+}
+.op-workspace .cx-empty small,
+.op-workspace .cx-none {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--op-muted);
+}
+.op-workspace .cx-none {
+  list-style: none;
+  padding: 18px 4px;
+}
+.op-workspace .cx-limits summary {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--op-muted);
+}
+.op-workspace .cx-limits ul {
+  margin: 9px 0;
+  padding-left: 16px;
+}
+.op-workspace .cx-limits li {
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: #8ca0b7;
+  margin-bottom: 5px;
+}
+.op-workspace .cx-limits a {
+  display: block;
+  font-size: 10px;
+  color: var(--cx-match);
+  margin-top: 3px;
+}
