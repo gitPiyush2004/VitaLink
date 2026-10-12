@@ -40,6 +40,7 @@ def get_service() -> ReliabilityService:
 @router.post(
     "/fit",
     response_model=ReliabilityResponse,
+    response_model_exclude_unset=True,
     dependencies=[Depends(verify_shared_secret)],
 )
 def fit_and_compute(

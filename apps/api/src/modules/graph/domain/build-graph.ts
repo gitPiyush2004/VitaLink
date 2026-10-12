@@ -18,7 +18,7 @@
  *
  *   country --SOURCED_FROM--> ingredient   only when UN Comtrade data exists
  *   ingredient --CONTAINED_IN--> drug      from openFDA active_ingredients
- *   manufacturer --MADE_BY--> drug         from openFDA labeler shares
+ *   manufacturer --MADE_BY--> drug         from observed openFDA labeler relationships
  *   manufacturer --OPERATES--> facility    needs DailyMed SPL; absent for now
  *   drug --STOCKED_AT--> hub               needs OSM warehouses; absent for now
  *
@@ -202,7 +202,7 @@ function drugNode(drug: DrugEntity): GraphNode {
 function containedInEdges(drug: DrugEntity): GraphEdge[] {
   const provenance = drug.provenance;
 
-  return drug.ingredientIds.map((ingredientId) => ({
+  return [...new Set(drug.ingredientIds)].map((ingredientId) => ({
     id: edgeId(ingredientId, 'CONTAINED_IN', drug.id),
     src: ingredientId,
     dst: drug.id,
@@ -218,7 +218,7 @@ function containedInEdges(drug: DrugEntity): GraphEdge[] {
 }
 
 /**
- * manufacturer --MADE_BY--> drug, weighted by observed product-listing share.
+ * manufacturer --MADE_BY--> drug, with structural weight 1; per-drug concentration is stored on the drug.
  *
  * ## Why this edge points the way it does
  *
@@ -247,16 +247,14 @@ function madeByEdges(
   drug: DrugEntity,
   manufacturersById: Map<string, ManufacturerEntity>,
 ): GraphEdge[] {
-  const relevant = drug.manufacturerIds
+  const relevant = [...new Set(drug.manufacturerIds)]
     .map((id) => manufacturersById.get(id))
     .filter((one): one is ManufacturerEntity => one !== undefined);
 
-  const total = relevant.reduce((sum, one) => sum + (one.distinctProductCount?.value ?? 0), 0);
-  if (total === 0) return [];
-
   return relevant.map((manufacturer) => {
-    const count = manufacturer.distinctProductCount?.value ?? 0;
-    const provenance = manufacturer.provenance;
+    // Manufacturer documents are shared across medicines. Their latest listing count
+    // can belong to a different generic, so it cannot supply this drug's edge share.
+    const provenance = drug.provenance;
 
     return {
       id: edgeId(manufacturer.id, 'MADE_BY', drug.id),
@@ -264,10 +262,11 @@ function madeByEdges(
       dst: drug.id,
       rel: 'MADE_BY' as const,
       weight: edgeWeight(
-        count / total,
+        1,
         provenance,
-        "This labeler's share of the openFDA product listings observed for this generic " +
-          'name. A share of OBSERVED LISTINGS, not of volume and not a contracted share.',
+        'Structural relationship, weight 1: the FDA-derived catalogue associates this ' +
+          'labeler with this medicine. No production, market or contracted share is asserted. ' +
+          'Shared labeler documents cannot provide a per-medicine listing distribution.',
       ),
       provenance,
     };

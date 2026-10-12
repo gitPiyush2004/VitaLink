@@ -1,0 +1,60 @@
+---
+source: 'apps/api/src/modules/signals/domain/simhash.ts'
+component: signals
+generated: true
+---
+
+# apps/api/src/modules/signals/domain/simhash.ts
+
+[Source on GitHub](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts) · [File index](../FILE_INDEX.md) · [Architecture](../03_SYSTEM_ARCHITECTURE.md) · [Data boundaries](../04_DATA_AND_EVIDENCE.md)
+
+## Responsibility
+
+Contains deterministic domain logic; inspect the named declarations and tests below for the calculation or matching rule.
+
+**Component:** Turns retrieved observations into clusters, entity matches, independence checks, corroboration and either published alerts or quarantine.
+
+## Source structure
+
+- `FNV_OFFSET` — binding, [line 61](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L61).
+- `FNV_PRIME` — binding, [line 62](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L62).
+- `MASK_64` — binding, [line 63](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L63).
+- `HASH_BITS` — binding, [line 65](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L65).
+- `BITS_PER_HEX_CHAR` — binding, [line 67](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L67).
+- `HEX_CHARS` — binding, [line 68](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L68).
+- `HEX_RADIX` — binding, [line 69](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L69).
+- `ZERO` — binding, [line 72](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L72).
+- `ONE` — binding, [line 73](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L73).
+- `SIMHASH_HAMMING_THRESHOLD` — binding, [line 84](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L84).
+- `SIMHASH_MIN_SHINGLES` — binding, [line 94](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L94).
+- `SHORT_DOCUMENT_WORDS` — binding, [line 102](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L102).
+- `SHORT_SHINGLE_SIZE` — binding, [line 105](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L105).
+- `shingleSizeFor` — FunctionDeclaration, [line 114](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L114).
+- `fnv1a64` — FunctionDeclaration, [line 118](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L118).
+- `normaliseText` — FunctionDeclaration, [line 134](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L134).
+- `shingles` — FunctionDeclaration, [line 153](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L153).
+- `simhash` — FunctionDeclaration, [line 174](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L174).
+- `hammingDistance` — FunctionDeclaration, [line 199](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L199).
+- `jaccardSimilarity` — FunctionDeclaration, [line 216](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L216).
+- `DuplicateVerdict` — TypeAliasDeclaration, [line 230](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L230).
+- `areNearDuplicates` — FunctionDeclaration, [line 245](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/signals/domain/simhash.ts#L245).
+
+## Static dependencies
+
+- [apps/api/src/config/constants.ts](./apps--api--src--config--constants.ts.md)
+
+Other import specifiers: none.
+
+## Static consumers
+
+- [apps/api/src/modules/signals/**tests**/verify.test.ts](./apps--api--src--modules--signals--__tests__--verify.test.ts.md)
+- [apps/api/src/modules/signals/domain/cluster.ts](./apps--api--src--modules--signals--domain--cluster.ts.md)
+- [apps/api/src/modules/signals/domain/ingest-mappers.ts](./apps--api--src--modules--signals--domain--ingest-mappers.ts.md)
+
+## Maintenance and verification
+
+Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
+
+Source SHA-256: `8f9f94d277cc87b3f3aa691ac82c46e974ab3bfdaf2562f4c2d990085085abcb`.
+
+Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

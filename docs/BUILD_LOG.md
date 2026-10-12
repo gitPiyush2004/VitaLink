@@ -1,5 +1,7 @@
 # Build log
 
+Current implementation and review context: [start here](context/00_START_HERE.md). This document includes development history; older intentions and engineering phase numbers are not current capability claims or academic review milestones.
+
 One paragraph per phase gate: what was built, what passed, what is blocked, and
 why. Written for a human reader, because this becomes the methodology chapter.
 
@@ -1026,3 +1028,19 @@ was penalising precisely the property the project cares about most. It stays at
 `packages/*/src/**/*.ts`, which swept in `packages/ui` — a React package — and
 failed their typechecks on a browser dependency neither will ever import. The
 packages are listed by name now.
+
+## Connected Phase 1 review workspace — 2026-10-12
+
+Added a real regulatory monitor and an organisation-scoped investigation workflow, connecting source snapshots, medicine matching, observed networks, the Python reliability service, conditional cascades, existing carrier adapters, response comparison and decision history. Added hourly worker ingestion, source coverage/heartbeat, watchlists, news verification/quarantine controls, evidence export, and a globe interface inspired by God’s Eye View. The earlier tools remain available.
+
+Live acceptance used FDA records rather than seeded rows. The local monitor contains 1,298 unique records from 300 recent enforcement reports and 1,000 fetched shortage presentations (two presentation identities deduplicate; the newest update is saved once). Both feeds disclose their caps. City geocoding succeeded, preserving its own source timestamps. A heparin investigation matched a product NDC, produced 46 network nodes, label-based 15–25°C storage, a reliability response and an impact trace. Explicit verification assumptions produced a two-day gap for a nine-day arrival with seven days of initial cover; no real inventory or commercial decision was asserted. The record survives reload with notes, decision and history. All six actual carrier adapters returned UNAVAILABLE/no_credentials, with mock mode disabled. Authentication checks covered bodyless refresh, sign-out/sign-in and unauthenticated access.
+
+Actual signal ingestion stored 110 unique signals from FDA and GDELT. Verification considered 76 clusters, published zero alerts and preserved the quarantine reasons. GDELT returned HTTP 429 during targeted corroboration; the remaining work was marked not attempted, rather than fabricated as corroborated. Official FDA evidence remains useful independently of that news verification result.
+
+Verification: 337 TypeScript tests across 21 files; 118 Python tests; formatting, ESLint, API/worker/web and root type checks; provenance, no-fixture, connector egress, fake-quote and secret gates; the separate reliability gate; production web build; desktop and narrow-screen browser checks. Added regressions for headerless gzip/Brotli, invalid cache recovery, duplicate graph identities and cross-medicine count isolation, late-arrival inventory balance, presentation identities, and Python optional-field/year-band wire behaviour. Dockerfiles and same-origin nginx configuration were added to complete Compose references; container execution remains untested because Docker is unavailable on this host. The web build retains a large-map-bundle warning.
+
+Remaining research: dated point-in-time source histories and an independently defined outcome series for prediction evaluation; verified physical supplier relationships and organisational inventory/demand; actual carrier credentials or documented supplier offers. The offline snapshot audit measures data coverage only and makes these limitations explicit.
+
+## Portable project context — 2026-10-12
+
+Added a linked Obsidian vault covering purpose, current state, architecture, data limits, workflows, academic review scope, roadmap, original-plan assessment and primary-source competitor research. File notes include curated responsibilities, extracted declarations/tests, static dependencies/consumers and source fingerprints. A repeatable generator and CI check enforce coverage and local links. The overview was created through the official Obsidian CLI. Corrected credential-only carrier activation claims and set the public mock-mode default to false. This documentation work does not implement the proposed product-candidate, benchmark or route-comparison features.

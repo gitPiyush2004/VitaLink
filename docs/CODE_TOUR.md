@@ -1,5 +1,7 @@
 # Code tour
 
+Current implementation and review context: [start here](context/00_START_HERE.md). This document includes development history; older intentions and engineering phase numbers are not current capability claims or academic review milestones.
+
 One request, end to end, with a stop at every decision that could have gone the
 other way. Read this before reading the code.
 
@@ -280,3 +282,13 @@ inside the file.
 | a cascade reaches no drug         | edge direction; ADR-0011                                 |
 | a carrier is missing from a table | it cannot be — `collectQuotes` iterates the adapter list |
 | a figure looks too good           | check its tag; SCENARIO means somebody assumed it        |
+
+## The connected investigation entry point
+
+Start at `apps/web/src/operations/Workspace.tsx`: the monitor, real source records and saved investigations. `Evidence.tsx` preserves product/lot scope. `InvestigationPanel.tsx` keeps analysis, trace, logistics, response and activity history together.
+
+On the server, `modules/operations/operations.ingestion.ts` maps actual FDA responses to stable incidents. The repository shares public regulatory data but scopes investigations and watches by organisation. `operations.analysis.ts` fetches medicine facts, conservatively matches them to the incident and calls the existing Python model through the connector.
+
+`OperationsService.trace` asks `GraphService.forShock` for a coherent observed snapshot, then uses `CascadeService.run`. The cascade cache includes its input data. The logistics panel uses the original shipment derivation and eligibility/scoring engine, attaching the resulting recommendation only after its organisation and context are checked.
+
+`domain/response-plan.ts` computes deterministic inventory gaps from recorded operator inputs. Stock arriving late cannot fill an earlier gap. The resulting SCENARIO quantities and Pareto comparison support a documented choice without asserting clinical suitability or placing an order. `eval/audit.ts` separately replays a frozen public snapshot to measure coverage.

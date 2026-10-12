@@ -1,0 +1,150 @@
+---
+source: 'packages/contracts/src/index.ts'
+component: contracts
+generated: true
+---
+
+# packages/contracts/src/index.ts
+
+[Source on GitHub](https://github.com/gitPiyush2004/VitaLink/blob/main/packages/contracts/src/index.ts) · [File index](../FILE_INDEX.md) · [Architecture](../03_SYSTEM_ARCHITECTURE.md) · [Data boundaries](../04_DATA_AND_EVIDENCE.md)
+
+## Responsibility
+
+Provides module/package exports or a package marker; follow re-export dependencies for implementations.
+
+**Component:** Defines shared runtime-validated domain contracts and provenance envelopes for observations, derived values, models and assumptions.
+
+## Source structure
+
+No TypeScript/Python declarations extracted; inspect the source link for configuration or prose.
+
+## Static dependencies
+
+- [packages/contracts/src/auth.ts](./packages--contracts--src--auth.ts.md)
+- [packages/contracts/src/cascade.ts](./packages--contracts--src--cascade.ts.md)
+- [packages/contracts/src/catalog.ts](./packages--contracts--src--catalog.ts.md)
+- [packages/contracts/src/common.ts](./packages--contracts--src--common.ts.md)
+- [packages/contracts/src/enums.ts](./packages--contracts--src--enums.ts.md)
+- [packages/contracts/src/events.ts](./packages--contracts--src--events.ts.md)
+- [packages/contracts/src/graph.ts](./packages--contracts--src--graph.ts.md)
+- [packages/contracts/src/limits.ts](./packages--contracts--src--limits.ts.md)
+- [packages/contracts/src/logistics-decision.ts](./packages--contracts--src--logistics-decision.ts.md)
+- [packages/contracts/src/logistics.ts](./packages--contracts--src--logistics.ts.md)
+- [packages/contracts/src/operations.ts](./packages--contracts--src--operations.ts.md)
+- [packages/contracts/src/provenance.ts](./packages--contracts--src--provenance.ts.md)
+- [packages/contracts/src/reliability.ts](./packages--contracts--src--reliability.ts.md)
+- [packages/contracts/src/scenarios.ts](./packages--contracts--src--scenarios.ts.md)
+- [packages/contracts/src/signals.ts](./packages--contracts--src--signals.ts.md)
+
+Other import specifiers: none.
+
+## Static consumers
+
+- [apps/api/src/config/weights.ts](./apps--api--src--config--weights.ts.md)
+- [apps/api/src/modules/auth/auth.controller.ts](./apps--api--src--modules--auth--auth.controller.ts.md)
+- [apps/api/src/modules/auth/auth.schema.ts](./apps--api--src--modules--auth--auth.schema.ts.md)
+- [apps/api/src/modules/auth/auth.service.ts](./apps--api--src--modules--auth--auth.service.ts.md)
+- [apps/api/src/modules/auth/auth.types.ts](./apps--api--src--modules--auth--auth.types.ts.md)
+- [apps/api/src/modules/auth/models/user.model.ts](./apps--api--src--modules--auth--models--user.model.ts.md)
+- [apps/api/src/modules/cascade/cascade.repository.ts](./apps--api--src--modules--cascade--cascade.repository.ts.md)
+- [apps/api/src/modules/cascade/cascade.schema.ts](./apps--api--src--modules--cascade--cascade.schema.ts.md)
+- [apps/api/src/modules/cascade/cascade.service.ts](./apps--api--src--modules--cascade--cascade.service.ts.md)
+- [apps/api/src/modules/catalog/catalog.schema.ts](./apps--api--src--modules--catalog--catalog.schema.ts.md)
+- [apps/api/src/modules/catalog/catalog.service.ts](./apps--api--src--modules--catalog--catalog.service.ts.md)
+- [apps/api/src/modules/catalog/catalog.types.ts](./apps--api--src--modules--catalog--catalog.types.ts.md)
+- [apps/api/src/modules/catalog/domain/drug-assembly.ts](./apps--api--src--modules--catalog--domain--drug-assembly.ts.md)
+- [apps/api/src/modules/catalog/domain/storage-parsing.ts](./apps--api--src--modules--catalog--domain--storage-parsing.ts.md)
+- [apps/api/src/modules/catalog/models/drug.model.ts](./apps--api--src--modules--catalog--models--drug.model.ts.md)
+- [apps/api/src/modules/graph/**tests**/build-graph.test.ts](./apps--api--src--modules--graph--__tests__--build-graph.test.ts.md)
+- [apps/api/src/modules/graph/domain/build-graph.ts](./apps--api--src--modules--graph--domain--build-graph.ts.md)
+- [apps/api/src/modules/graph/graph.repository.ts](./apps--api--src--modules--graph--graph.repository.ts.md)
+- [apps/api/src/modules/graph/graph.service.ts](./apps--api--src--modules--graph--graph.service.ts.md)
+- [apps/api/src/modules/graph/models/graph-edge.model.ts](./apps--api--src--modules--graph--models--graph-edge.model.ts.md)
+- [apps/api/src/modules/graph/models/graph-node.model.ts](./apps--api--src--modules--graph--models--graph-node.model.ts.md)
+- [apps/api/src/modules/logistics/**tests**/factories/logistics.factory.ts](./apps--api--src--modules--logistics--__tests__--factories--logistics.factory.ts.md)
+- [apps/api/src/modules/logistics/domain/carrier-fallbacks.ts](./apps--api--src--modules--logistics--domain--carrier-fallbacks.ts.md)
+- [apps/api/src/modules/logistics/domain/eligibility-gate.ts](./apps--api--src--modules--logistics--domain--eligibility-gate.ts.md)
+- [apps/api/src/modules/logistics/domain/recommend.ts](./apps--api--src--modules--logistics--domain--recommend.ts.md)
+- [apps/api/src/modules/logistics/domain/score.ts](./apps--api--src--modules--logistics--domain--score.ts.md)
+- [apps/api/src/modules/logistics/domain/shipment-derivation.ts](./apps--api--src--modules--logistics--domain--shipment-derivation.ts.md)
+- [apps/api/src/modules/logistics/domain/sub-scores.ts](./apps--api--src--modules--logistics--domain--sub-scores.ts.md)
+- [apps/api/src/modules/logistics/domain/urgency.ts](./apps--api--src--modules--logistics--domain--urgency.ts.md)
+- [apps/api/src/modules/logistics/logistics.controller.ts](./apps--api--src--modules--logistics--logistics.controller.ts.md)
+- [apps/api/src/modules/logistics/logistics.repository.ts](./apps--api--src--modules--logistics--logistics.repository.ts.md)
+- [apps/api/src/modules/logistics/logistics.schema.ts](./apps--api--src--modules--logistics--logistics.schema.ts.md)
+- [apps/api/src/modules/logistics/logistics.service.ts](./apps--api--src--modules--logistics--logistics.service.ts.md)
+- [apps/api/src/modules/logistics/models/logistics-recommendation.model.ts](./apps--api--src--modules--logistics--models--logistics-recommendation.model.ts.md)
+- [apps/api/src/modules/logistics/models/mappers.ts](./apps--api--src--modules--logistics--models--mappers.ts.md)
+- [apps/api/src/modules/logistics/models/shipment-request.model.ts](./apps--api--src--modules--logistics--models--shipment-request.model.ts.md)
+- [apps/api/src/modules/operations/**tests**/response-plan.test.ts](./apps--api--src--modules--operations--__tests__--response-plan.test.ts.md)
+- [apps/api/src/modules/operations/domain/incidents.ts](./apps--api--src--modules--operations--domain--incidents.ts.md)
+- [apps/api/src/modules/operations/domain/matching.ts](./apps--api--src--modules--operations--domain--matching.ts.md)
+- [apps/api/src/modules/operations/domain/response-plan.ts](./apps--api--src--modules--operations--domain--response-plan.ts.md)
+- [apps/api/src/modules/operations/operations.analysis.ts](./apps--api--src--modules--operations--operations.analysis.ts.md)
+- [apps/api/src/modules/operations/operations.ingestion.ts](./apps--api--src--modules--operations--operations.ingestion.ts.md)
+- [apps/api/src/modules/operations/operations.repository.ts](./apps--api--src--modules--operations--operations.repository.ts.md)
+- [apps/api/src/modules/operations/operations.schema.ts](./apps--api--src--modules--operations--operations.schema.ts.md)
+- [apps/api/src/modules/operations/operations.service.ts](./apps--api--src--modules--operations--operations.service.ts.md)
+- [apps/api/src/modules/scenarios/domain/enumerate.ts](./apps--api--src--modules--scenarios--domain--enumerate.ts.md)
+- [apps/api/src/modules/scenarios/domain/outcome-terms.ts](./apps--api--src--modules--scenarios--domain--outcome-terms.ts.md)
+- [apps/api/src/modules/scenarios/models/scenario-run.model.ts](./apps--api--src--modules--scenarios--models--scenario-run.model.ts.md)
+- [apps/api/src/modules/scenarios/scenarios.schema.ts](./apps--api--src--modules--scenarios--scenarios.schema.ts.md)
+- [apps/api/src/modules/signals/domain/extraction.ts](./apps--api--src--modules--signals--domain--extraction.ts.md)
+- [apps/api/src/modules/signals/domain/independence.ts](./apps--api--src--modules--signals--domain--independence.ts.md)
+- [apps/api/src/modules/signals/domain/ingest-mappers.ts](./apps--api--src--modules--signals--domain--ingest-mappers.ts.md)
+- [apps/api/src/modules/signals/domain/veracity.ts](./apps--api--src--modules--signals--domain--veracity.ts.md)
+- [apps/api/src/modules/signals/domain/verify-helpers.ts](./apps--api--src--modules--signals--domain--verify-helpers.ts.md)
+- [apps/api/src/modules/signals/models/mappers.ts](./apps--api--src--modules--signals--models--mappers.ts.md)
+- [apps/api/src/modules/signals/models/raw-signal.model.ts](./apps--api--src--modules--signals--models--raw-signal.model.ts.md)
+- [apps/api/src/modules/signals/models/verified-alert.model.ts](./apps--api--src--modules--signals--models--verified-alert.model.ts.md)
+- [apps/api/src/modules/signals/signals.ingest.ts](./apps--api--src--modules--signals--signals.ingest.ts.md)
+- [apps/api/src/modules/signals/signals.schema.ts](./apps--api--src--modules--signals--signals.schema.ts.md)
+- [apps/api/src/shared/auth/permissions.ts](./apps--api--src--shared--auth--permissions.ts.md)
+- [apps/api/src/shared/auth/tokens.ts](./apps--api--src--shared--auth--tokens.ts.md)
+- [apps/api/src/shared/connectors/carriers.ts](./apps--api--src--shared--connectors--carriers.ts.md)
+- [apps/api/src/shared/db/document-types.ts](./apps--api--src--shared--db--document-types.ts.md)
+- [apps/api/src/shared/db/mappers.ts](./apps--api--src--shared--db--mappers.ts.md)
+- [apps/api/src/shared/db/quantity.schema.ts](./apps--api--src--shared--db--quantity.schema.ts.md)
+- [apps/api/src/shared/errors/app-error.ts](./apps--api--src--shared--errors--app-error.ts.md)
+- [apps/api/src/shared/http/pagination.ts](./apps--api--src--shared--http--pagination.ts.md)
+- [apps/api/src/shared/http/response.ts](./apps--api--src--shared--http--response.ts.md)
+- [apps/api/src/shared/middleware/auth.ts](./apps--api--src--shared--middleware--auth.ts.md)
+- [apps/api/src/shared/middleware/error-handler.ts](./apps--api--src--shared--middleware--error-handler.ts.md)
+- [apps/api/src/shared/types/express.d.ts](./apps--api--src--shared--types--express.d.ts.md)
+- [apps/api/src/shared/types/index.ts](./apps--api--src--shared--types--index.ts.md)
+- [apps/web/src/api/queries.ts](./apps--web--src--api--queries.ts.md)
+- [apps/web/src/operations/Analysis.tsx](./apps--web--src--operations--Analysis.tsx.md)
+- [apps/web/src/operations/Evidence.tsx](./apps--web--src--operations--Evidence.tsx.md)
+- [apps/web/src/operations/Globe.tsx](./apps--web--src--operations--Globe.tsx.md)
+- [apps/web/src/operations/InvestigationPanel.tsx](./apps--web--src--operations--InvestigationPanel.tsx.md)
+- [apps/web/src/operations/LogisticsPanel.tsx](./apps--web--src--operations--LogisticsPanel.tsx.md)
+- [apps/web/src/operations/MonitorRail.tsx](./apps--web--src--operations--MonitorRail.tsx.md)
+- [apps/web/src/operations/ResponsePlanner.tsx](./apps--web--src--operations--ResponsePlanner.tsx.md)
+- [apps/web/src/operations/SourcePanel.tsx](./apps--web--src--operations--SourcePanel.tsx.md)
+- [apps/web/src/operations/TracePanel.tsx](./apps--web--src--operations--TracePanel.tsx.md)
+- [apps/web/src/operations/Workspace.tsx](./apps--web--src--operations--Workspace.tsx.md)
+- [apps/web/src/operations/api.ts](./apps--web--src--operations--api.ts.md)
+- [apps/web/src/views/DecideView.tsx](./apps--web--src--views--DecideView.tsx.md)
+- [apps/web/src/views/LogisticsView.tsx](./apps--web--src--views--LogisticsView.tsx.md)
+- [eval/audit.ts](./eval--audit.ts.md)
+- [packages/connectors/src/carriers/carrier-adapter.ts](./packages--connectors--src--carriers--carrier-adapter.ts.md)
+- [packages/connectors/src/carriers/carrier-registry.ts](./packages--connectors--src--carriers--carrier-registry.ts.md)
+- [packages/connectors/src/carriers/dsv.adapter.ts](./packages--connectors--src--carriers--dsv.adapter.ts.md)
+- [packages/connectors/src/carriers/dsv.contracts.ts](./packages--connectors--src--carriers--dsv.contracts.ts.md)
+- [packages/connectors/src/carriers/mock-carrier.adapter.ts](./packages--connectors--src--carriers--mock-carrier.adapter.ts.md)
+- [packages/connectors/src/carriers/unavailable-carrier.adapter.ts](./packages--connectors--src--carriers--unavailable-carrier.adapter.ts.md)
+- [packages/connectors/src/http/cached-client.ts](./packages--connectors--src--http--cached-client.ts.md)
+- [packages/connectors/src/reliability.client.ts](./packages--connectors--src--reliability.client.ts.md)
+- [packages/connectors/src/sources/source-registry.ts](./packages--connectors--src--sources--source-registry.ts.md)
+- [packages/graph/src/supply-graph.ts](./packages--graph--src--supply-graph.ts.md)
+- [packages/graph/src/traversal.ts](./packages--graph--src--traversal.ts.md)
+- [packages/ui/src/chips.tsx](./packages--ui--src--chips.tsx.md)
+- [packages/ui/src/provenance.tsx](./packages--ui--src--provenance.tsx.md)
+
+## Maintenance and verification
+
+Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
+
+Source SHA-256: `2eb59713776fe8c803de277044cda4994b25dff6c8356d1657491e3251fe1dde`.
+
+Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

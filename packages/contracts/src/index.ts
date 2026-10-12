@@ -23,3 +23,4 @@ export * from './logistics-decision';
 export * from './scenarios';
 export * from './events';
 export * from './auth';
+export * from './operations';

@@ -1,5 +1,7 @@
 # Learning notes
 
+Current implementation and review context: [start here](context/00_START_HERE.md). This document includes development history; older intentions and engineering phase numbers are not current capability claims or academic review milestones.
+
 What building this actually taught me, as distinct from what it demonstrates.
 
 Each entry is something I got wrong first. The corrected version is in the code;
@@ -281,3 +283,20 @@ looking at.
 
 All three need outcome data, and outcome data needs the stage that is not built.
 That is the honest shape of the gap.
+
+## Integration findings from the review workspace
+
+A valid response schema is insufficient unless both services serialize it the same way. Python emitted optional provenance fields as null; TypeScript expected them absent. The live reliability call caught this even though both suites were green. The API regression now checks optional omission while retaining required nullable fields.
+
+Public gateways can strip Content-Encoding. FDA returned headerless gzip and Nominatim returned headerless Brotli, including a tiny valid-UTF-8 compressed empty array. Decoding must inspect bytes, bound decompression and validate before caching. Old malformed cache entries are now refetched, rather than poisoning a source until expiry.
+
+Stable IDs and normalized names are necessary but can collapse two labeler strings onto the same graph identity. Traversal must not receive duplicate edge keys or count the same relationship twice. The graph builder now deduplicates related entity IDs before emitting edges and calculating their observed-listing shares.
+
+Real regulatory status and local operational impact are different. A national Current shortage can contain an Available presentation. A recall can apply only to specified lots. Neither record supplies a hospital’s inventory. The UI and response calculations preserve these distinctions instead of translating them into an automatic stockout prediction.
+
+An evaluation report should measure what the data supports. A frozen snapshot can establish identifier and source coverage; it cannot establish historical forecasting accuracy. Current versions of public records contain information that may not have been available before the event. Phase 2 evaluation needs time-versioned inputs and separate outcomes.
+
+A shared labeler document’s latest product-listing count can come from a different
+medicine. It must not become a per-medicine edge share. Labeler edges now state a
+structural relationship with weight 1 and source it to the drug’s own catalogue
+evidence. Listing concentration remains per drug; no production share is claimed.

@@ -13,12 +13,14 @@ import { createAuthRouter } from '@modules/auth/auth.routes';
 import { createCascadeRouter } from '@modules/cascade/cascade.routes';
 import { createCatalogRouter } from '@modules/catalog/catalog.routes';
 import { createLogisticsRouter } from '@modules/logistics/logistics.routes';
+import { createOperationsRouter } from '@modules/operations/operations.routes';
 import { createScenariosRouter } from '@modules/scenarios/scenarios.routes';
 import { createSignalsRouter } from '@modules/signals/signals.routes';
 
 export function createApiRouter(): Router {
   const router = Router();
 
+  router.use('/operations', createOperationsRouter());
   router.use('/auth', createAuthRouter());
   router.use('/catalog', createCatalogRouter());
   router.use('/cascade', createCascadeRouter());

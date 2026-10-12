@@ -29,6 +29,7 @@ import type { Provenance } from '@vitalink/contracts';
 
 import { classifyStatus, classifyThrow, type AttemptOutcome } from './classify';
 import { ConnectorError } from './connector-error';
+import { decodeBody } from './decode-body';
 import {
   realSleeper,
   silentLogger,
@@ -128,24 +129,12 @@ export class CachedHttpClient {
     const cacheKey = buildCacheKey(request);
     const cached = await this.cache.get(cacheKey);
 
-    if (cached !== null) {
-      const entry = parseCacheEntry(cached);
-      if (entry !== null) {
-        this.logger.debug({ source: request.sourceId, url: request.url }, 'cache hit');
-        return {
-          data: validate(schema, entry.body, request),
-          // The provenance is the ORIGINAL fetch time, not now. A cached value is
-          // still a value fetched at that instant, and claiming otherwise would
-          // misrepresent how fresh the number is.
-          provenance: entry.provenance,
-          fromCache: true,
-          rawBody: entry.body,
-        };
-      }
-    }
+    const hit = this.cachedJson(cached, schema, request);
+    if (hit) return hit;
 
     const rawBody = await this.fetchWithRetries(request);
     const provenance = this.buildProvenance(request);
+    const data = validate(schema, rawBody, request);
 
     await this.cache.set(
       cacheKey,
@@ -153,7 +142,28 @@ export class CachedHttpClient {
       request.cacheTtlSeconds,
     );
 
-    return { data: validate(schema, rawBody, request), provenance, fromCache: false, rawBody };
+    return { data, provenance, fromCache: false, rawBody };
+  }
+
+  private cachedJson<T>(
+    cached: string | null,
+    schema: ZodType<T>,
+    request: SourceRequest,
+  ): Fetched<T> | null {
+    if (cached === null) return null;
+    const entry = parseCacheEntry(cached);
+    if (!entry) return null;
+    try {
+      const data = validate(schema, entry.body, request);
+      this.logger.debug({ source: request.sourceId, url: request.url }, 'cache hit');
+      return { data, provenance: entry.provenance, fromCache: true, rawBody: entry.body };
+    } catch (error) {
+      this.logger.warn(
+        { source: request.sourceId, err: error },
+        'Invalid cache entry; refetching upstream',
+      );
+      return null;
+    }
   }
 
   /**
@@ -337,7 +347,7 @@ export class CachedHttpClient {
           ? await undiciFetch(request.url, { ...init, dispatcher: slowHandshakeAgent() })
           : await fetch(request.url, init);
 
-      const body = await response.text();
+      const body = decodeBody(await response.arrayBuffer());
 
       if (response.ok) return { kind: 'ok', body };
       return classifyStatus(request, response);

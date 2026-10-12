@@ -17,13 +17,17 @@ export { loginRequestSchema, oauthCallbackQuerySchema };
  * field exists for non-browser clients (the workers, integration tests) that
  * have no cookie jar.
  */
-export const refreshRequestSchema = z.object({
-  refresh_token: z.string().min(1).optional(),
-});
+export const refreshRequestSchema = z
+  .object({
+    refresh_token: z.string().min(1).optional(),
+  })
+  .default({});
 export type RefreshRequest = z.infer<typeof refreshRequestSchema>;
 
-export const logoutRequestSchema = z.object({
-  /** When true, every session for this user is ended, not just this one. */
-  all_sessions: z.boolean().default(false),
-});
+export const logoutRequestSchema = z
+  .object({
+    /** When true, every session for this user is ended, not just this one. */
+    all_sessions: z.boolean().default(false),
+  })
+  .default({ all_sessions: false });
 export type LogoutRequest = z.infer<typeof logoutRequestSchema>;

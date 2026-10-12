@@ -77,13 +77,19 @@ def _modelled(
     Returns:
         A `Quantity` that satisfies the covenant's MODELLED rules by construction.
     """
-    low, high = rate_estimation.sensitivity_band(value / band_scale, BAND_RELATIVE_WIDTH)
+    if unit == "years":
+        low, high = value * (1 - BAND_RELATIVE_WIDTH), value * (1 + BAND_RELATIVE_WIDTH)
+    else:
+        low, high = rate_estimation.sensitivity_band(value / band_scale, BAND_RELATIVE_WIDTH)
 
     return Quantity(
         value=value,
         unit=unit,
         tag="MODELLED",
-        band=Band(low=low * band_scale, high=high * band_scale),
+        band=Band(
+            low=low if unit == "years" else low * band_scale,
+            high=high if unit == "years" else high * band_scale,
+        ),
         provenance=Provenance(
             source_name=PAPER_NAME,
             source_url=PAPER_URL,
@@ -110,7 +116,14 @@ def _shared_assumptions(
         "echelons_assumed_independent": True,
         "component_lifetimes_assumed_exponential": True,
         "z_line_is_a_scenario_default": rates.z_line == 1,
-        "z_api_counts_observable_market_not_api_manufacturers": True,
+        "z_api_interpretation": (
+            "Caller-supplied API redundancy; public labeler counts do not "
+            "establish independent API suppliers."
+        ),
+        "z_plant_interpretation": (
+            "Caller-supplied plant redundancy; the operational workflow "
+            "uses a labeler-concentration proxy."
+        ),
         "mu_fitted_only_from_resolved_shortages_so_is_optimistic": True,
         "rate_origins": origins.model_dump(),
     }

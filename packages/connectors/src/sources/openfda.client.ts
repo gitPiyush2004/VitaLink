@@ -110,6 +110,10 @@ export type DrugLabel = z.infer<typeof labelSchema>;
 
 export const enforcementSchema = z.object({
   recall_number: z.string(),
+  event_id: z.string().optional(),
+  code_info: z.string().optional(),
+  distribution_pattern: z.string().optional(),
+  address_1: z.string().optional(),
   /** YYYYMMDD. Converted at the boundary, in the ingestion mapper. */
   report_date: z.string().optional(),
   recall_initiation_date: z.string().optional(),
@@ -138,6 +142,8 @@ export type EnforcementReport = z.infer<typeof enforcementSchema>;
 
 export const shortageSchema = z.object({
   /** Field names differ slightly across openFDA revisions, so both are optional. */
+  package_ndc: z.string().optional(),
+  availability: z.string().optional(),
   generic_name: z.string().optional(),
   proprietary_name: z.string().optional(),
   company_name: z.string().optional(),

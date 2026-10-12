@@ -104,7 +104,7 @@ async function refreshOnce(): Promise<boolean> {
 }
 
 export type RequestOptions = {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** Internal. Set on the single retry after a refresh, to stop a loop. */
   isRetry?: boolean;

@@ -1,5 +1,7 @@
 # Model cards
 
+Current implementation and review context: [start here](context/00_START_HERE.md). This document includes development history; older intentions and engineering phase numbers are not current capability claims or academic review milestones.
+
 One card per model: purpose, inputs, outputs, baseline, metrics, limitations,
 version. Written as the models are built, not at the end.
 
@@ -24,14 +26,14 @@ system rests on.
 
 ### Inputs
 
-| Input                                          | Meaning                   | Provenance                                                                               |
-| ---------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
-| `z_api`                                        | API suppliers in parallel | `DERIVED` from openFDA NDC distinct labelers, excluding repackaging categories           |
-| `z_plant`                                      | plants in parallel        | `DERIVED` from DailyMed SPL registered establishments _(deferred past MVP; currently 1)_ |
-| `z_line`                                       | lines per plant           | `SCENARIO`, default 1, flagged on screen as an assumption                                |
-| `lam_api`                                      | supplier failure rate / y | `DERIVED` from openFDA enforcement history, else paper baseline                          |
-| `mu_api`                                       | supplier repair rate / y  | `DERIVED` from resolved openFDA shortage durations, else paper baseline                  |
-| `lam_plant`, `mu_plant`, `lam_line`, `mu_line` | plant and line rates      | **Always** paper baseline. No public series exists.                                      |
+| Input                                          | Meaning                   | Provenance                                                                                                                                 |
+| ---------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `z_api`                                        | API suppliers in parallel | `SCENARIO`: 1 in the operational workflow; independent API suppliers are not observable from labelers                                      |
+| `z_plant`                                      | plants in parallel        | `DERIVED` labeler-concentration proxy in the operational workflow, not observed manufacturing plants                                       |
+| `z_line`                                       | lines per plant           | `SCENARIO`, default 1, flagged on screen as an assumption                                                                                  |
+| `lam_api`                                      | supplier failure rate / y | `DERIVED` from distinct recall events over a 3-year window in the operational workflow, a product-level failure proxy; else paper baseline |
+| `mu_api`                                       | supplier repair rate / y  | Paper baseline in the operational workflow; no reliable resolved-duration history is supplied                                              |
+| `lam_plant`, `mu_plant`, `lam_line`, `mu_line` | plant and line rates      | **Always** paper baseline. No public series exists.                                                                                        |
 
 ### Outputs
 
@@ -82,14 +84,11 @@ undifferentiated lever gets this backwards. Asserted in
    cascade engine models separately, and the two should be read together.
 2. **Exponential lifetimes.** Constant hazard rate, no wear-out and no
    infant-mortality behaviour.
-3. **`z_api` counts the observable market, not API manufacturers.** Heparin
-   sodium returns 47 distinct openFDA labelers, including repackagers such as
-   "McKesson Corporation dba SKY Packaging", several of which may be repackaging
-   the same upstream API. Feeding 47 into `1 - p^z` gives a Fragility Index of
-   essentially zero for a drug that has been in recorded shortage. The
-   implementation excludes repackaging marketing categories and reports the raw
-   count separately as an explicit upper bound. Even after that, this is a
-   market-structure proxy, not a count of API plants.
+3. **Labelers do not identify independent API suppliers.** The catalogue reports
+   a raw labeler tally and a concentration-derived effective-labeler count.
+   Repackagers can share upstream suppliers. The operational workflow therefore
+   supplies `z_api=1` explicitly as a scenario assumption. Its `z_plant` proxy
+   is the effective labeler count, not a claim about manufacturing plants.
 4. **`mu` is optimistic by construction.** Only resolved shortages have a
    duration, and unresolved ones are by definition the long ones. Survivorship
    bias raises the fitted repair rate and lowers the Fragility Index.

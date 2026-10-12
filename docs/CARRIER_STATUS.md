@@ -1,5 +1,22 @@
 # Carrier integration status
 
+## Current code status — 12 October 2026
+
+DSV is the only concrete quote adapter. Its OAuth flow is implemented, but quote
+request/response fields remain `UNVERIFIED_SCHEMA` and no actual account response
+has validated live quoting. FedEx, UPS, DHL, Kuehne+Nagel and CEVA are registered
+as `UnavailableCarrierAdapter` with empty keys. Their environment fields are
+reserved; credentials alone do not activate quote APIs. Mock mode is off by
+default and its synthetic adapter is development-only.
+
+The research below is dated historical portal research, not current integration
+certification. Its references to a complete DSV integration, likely winner or
+credential-only activation are superseded by the implementation status above.
+Provider access terms must be rechecked when implementing an adapter. See the
+[current project state](context/02_CURRENT_STATE.md).
+
+## Historical provider research
+
 **Last verified: 8 September 2026, by reading each carrier's own developer
 documentation.** Where a claim in the spec's PART 6.1 table has drifted, the
 correction is stated and marked.

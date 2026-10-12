@@ -22,20 +22,16 @@ import { ApiError, login } from '../api/client';
 
 const FACTS = [
   {
-    lead: 'Every number carries its origin.',
-    rest: 'REAL, DERIVED, MODELLED or SCENARIO — enforced by the type system, not by review.',
+    lead: 'Watch regulatory events.',
+    rest: 'Current FDA shortage presentations and reported recalls, with source dates, lots and availability.',
   },
   {
-    lead: 'A figure that cannot be sourced is not shown.',
-    rest: 'It says "not available" and gives the reason. Never a zero, never a dash.',
+    lead: 'Investigate medicine exposure.',
+    rest: 'Connect evidence to product identifiers, ingredients and labelers. See the limits of each relationship.',
   },
   {
-    lead: 'No bundled datasets and no seeded rows.',
-    rest: 'openFDA, GDELT, UN Comtrade and OpenStreetMap, fetched live. A CI gate fails the build if a fixture ever reaches runtime code.',
-  },
-  {
-    lead: 'No random numbers anywhere in runtime code.',
-    rest: 'Every run over the same inputs produces the same answer, including the demo ones.',
+    lead: 'Record an informed response.',
+    rest: 'Compare supplier offers against your days of supply, preserve the evidence and document the decision.',
   },
 ];
 
@@ -60,14 +56,14 @@ export function LoginView({ onSignedIn }: { onSignedIn: () => void }): React.Rea
         setError(
           cause instanceof ApiError
             ? cause.message
-            : 'Could not reach the API. Is it running on http://localhost:4000?',
+            : 'Unable to connect. Please try again or contact your administrator.',
         );
         setBusy(false);
       });
   }
 
   return (
-    <div className="vl-login">
+    <div className="vl-login op-login">
       <section className="vl-login-brand">
         <div className="vl-row" style={{ gap: 12 }}>
           <span className="vl-brand-mark" aria-hidden="true">
@@ -89,13 +85,11 @@ export function LoginView({ onSignedIn }: { onSignedIn: () => void }): React.Rea
           </span>
         </div>
 
-        <h1>The supply-chain dashboard that tells you what it does not know.</h1>
+        <h1>See the disruption. Protect the supply.</h1>
 
         <p>
-          An open-data pharmaceutical resilience platform. It watches public sources for
-          disruptions, traces how one shock propagates through a supply graph built from live
-          regulatory data, and recommends a carrier whose every constraint came from the drug&apos;s
-          own label.
+          A medicine supply investigation workspace for procurement and supply-chain analysts.
+          Follow real regulatory evidence from first signal to a recorded response decision.
         </p>
 
         <ul className="vl-login-facts">
@@ -157,12 +151,8 @@ export function LoginView({ onSignedIn }: { onSignedIn: () => void }): React.Rea
           </Button>
 
           <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--vl-ink-3)', lineHeight: 1.6 }}>
-            No account yet? Create the first one with{' '}
-            <code style={{ color: 'var(--vl-ink-2)' }}>
-              npm run bootstrap:org --workspace @vitalink/api
-            </code>
-            . The password policy wants twelve characters, three character classes, and no substring
-            of your email local part.
+            Access is managed by your organisation administrator. Public regulatory evidence is kept
+            separate from your organisation’s investigation records.
           </p>
         </form>
       </section>

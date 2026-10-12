@@ -100,6 +100,33 @@ describe('CachedHttpClient.getJson', () => {
     expect(second.fromCache).toBe(true);
   });
 
+  it('refetches an invalid cached body and replaces it only after validation', async () => {
+    const good = new CachedHttpClient({
+      cache: createMemoryCache(),
+      clock: frozenClock,
+      sleeper: instantSleeper,
+    });
+    scriptFetch([{ status: 200, body: '{"value":42}' }]);
+    const original = await good.getJson(request(), bodySchema);
+    let stored = JSON.stringify({ body: 'corrupt old cache', provenance: original.provenance });
+    const client = new CachedHttpClient({
+      cache: {
+        get: () => Promise.resolve(stored),
+        set: (_key, value) => {
+          stored = value;
+          return Promise.resolve();
+        },
+      },
+      clock: frozenClock,
+      sleeper: instantSleeper,
+    });
+    const first = await client.getJson(request(), bodySchema);
+    const second = await client.getJson(request(), bodySchema);
+    expect(first.fromCache).toBe(false);
+    expect(second.fromCache).toBe(true);
+    expect(second.data.value).toBe(42);
+  });
+
   it('reports the original fetch time on a cache hit, not the time of the hit', async () => {
     // A cached value is still a value fetched at that instant. Restamping it
     // would misrepresent how fresh the number is, which is the one thing the

@@ -34,8 +34,8 @@ import { hasAccessToken, logout, restoreSession } from './api/client';
 import { loadOverview, type Overview } from './api/overview';
 import { NavIcon } from './components/icons';
 import { ScreenGuide } from './components/ScreenGuide';
-import { prefersReducedMotion, Splash } from './components/Splash';
 import { TABS, tabMeta, type TabId } from './nav';
+import { Workspace } from './operations/Workspace';
 import { CascadeView } from './views/CascadeView';
 import { CatalogView } from './views/CatalogView';
 import { DecideView } from './views/DecideView';
@@ -63,7 +63,7 @@ export function App(): React.ReactElement {
   // Skipped outright when the reader has asked for less motion. Checked here
   // rather than in CSS: the global reduce rule collapses durations to nothing,
   // which would leave a motionless truck on screen instead of removing it.
-  const [splash, setSplash] = useState(() => !prefersReducedMotion());
+  const [tools, setTools] = useState(false);
 
   // One refresh attempt on load, so a page reload does not need a re-login.
   // The access token is held in memory and lost on refresh by design; the
@@ -75,16 +75,13 @@ export function App(): React.ReactElement {
     });
   }, []);
 
-  const dismiss = useCallback(() => {
-    setSplash(false);
-  }, []);
-
   return (
     <>
-      {/* Above the app, never in front of its work: the session restore and the
-          overview fetch both run underneath while this plays. */}
-      {splash ? <Splash onDone={dismiss} /> : null}
       <Session
+        tools={tools}
+        onTools={() => {
+          setTools(!tools);
+        }}
         checking={checking}
         signedIn={signedIn}
         onSignedIn={() => {
@@ -101,11 +98,15 @@ export function App(): React.ReactElement {
 }
 
 function Session({
+  tools,
+  onTools,
   checking,
   signedIn,
   onSignedIn,
   onSignOut,
 }: {
+  tools: boolean;
+  onTools: () => void;
   checking: boolean;
   signedIn: boolean;
   onSignedIn: () => void;
@@ -113,7 +114,15 @@ function Session({
 }): React.ReactElement {
   if (checking) return <Booting />;
   if (!signedIn) return <LoginView onSignedIn={onSignedIn} />;
-  return <SignedIn onSignOut={onSignOut} />;
+  if (!tools) return <Workspace onSignOut={onSignOut} onTools={onTools} />;
+  return (
+    <>
+      <button onClick={onTools} style={{ position: 'fixed', bottom: 12, right: 12, zIndex: 20 }}>
+        ← Disruption workspace
+      </button>
+      <SignedIn onSignOut={onSignOut} />
+    </>
+  );
 }
 
 /**

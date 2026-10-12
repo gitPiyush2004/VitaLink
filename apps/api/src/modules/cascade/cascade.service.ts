@@ -24,7 +24,14 @@
 
 import { createHash } from 'node:crypto';
 
-import { derived, scenario, type Provenance, type Quantity } from '@vitalink/contracts';
+import {
+  derived,
+  scenario,
+  type Provenance,
+  type Quantity,
+  type GraphNode,
+  type GraphEdge,
+} from '@vitalink/contracts';
 import type { Path } from '@vitalink/graph';
 
 import {
@@ -54,6 +61,7 @@ export type RunCascadeInput = {
    * public source does. See `domain/cover-projection.ts`.
    */
   assumedCoverDays: number;
+  snapshot?: { nodes: GraphNode[]; edges: GraphEdge[] };
 };
 
 export class CascadeService {
@@ -80,16 +88,21 @@ export class CascadeService {
       maxDepth: input.maxDepth ?? DEFAULT_CASCADE_MAX_DEPTH,
       assumedCoverDays: input.assumedCoverDays,
     };
-    const inputHash = hashRequest(request);
-
-    const cached = await this.repository.findByHash(input.orgId, inputHash);
-    if (cached !== null) return cached;
-
     const startedAt = new Date();
     const { shockNode, traced, drugsById } = await this.gatherInputs(
       input.shockNodeId,
       request.maxDepth,
+      input.snapshot,
     );
+    // Input data participates in the cache key: refreshing the graph must invalidate a prior result.
+    const inputHash = createHash('sha256')
+      .update(hashRequest(request))
+      .update(
+        JSON.stringify({ paths: [...traced.result.pathsByNode], drugs: [...drugsById.values()] }),
+      )
+      .digest('hex');
+    const cached = await this.repository.findByHash(input.orgId, inputHash);
+    if (cached !== null) return cached;
 
     const exposed = this.buildExposedDrugs({
       pathsByNode: traced.result.pathsByNode,
@@ -117,12 +130,7 @@ export class CascadeService {
       // Carried through from the graph build, so the UI can say "no country
       // dependency observed" rather than showing an empty panel.
       absentRelations: [],
-      traversalNotes: {
-        pathsPrunedByWeight: traced.result.prunedByWeight,
-        pathsPrunedByCap: traced.result.prunedByCap,
-        graphWasTruncated: traced.graphWasTruncated,
-        droppedEdges: traced.droppedEdges,
-      },
+      traversalNotes: traversalNotes(traced),
       startedAt,
       completedAt: new Date(),
     });
@@ -140,24 +148,35 @@ export class CascadeService {
   private async gatherInputs(
     shockNodeId: string,
     maxDepth: number,
+    snapshot?: { nodes: GraphNode[]; edges: GraphEdge[] },
   ): Promise<{
     shockNode: NonNullable<Awaited<ReturnType<GraphService['getNode']>>>;
     traced: Awaited<ReturnType<GraphService['traceFrom']>>;
     drugsById: Map<string, DrugEntity>;
   }> {
-    const shockNode = await this.graph.getNode(shockNodeId);
+    const shockNode = snapshot
+      ? (snapshot.nodes.find((node) => node.id === shockNodeId) ?? null)
+      : await this.graph.getNode(shockNodeId);
     if (shockNode === null) {
       throw new NotFoundError('Graph node', shockNodeId, 'INVALID_DISRUPTION');
     }
 
     const [traced, drugs] = await Promise.all([
-      this.graph.traceFrom(shockNodeId, { maxDepth }),
-      this.catalog.listDrugs({
-        limit: MAX_PAGE_SIZE,
-        cursorId: null,
-        nlemCriticalOnly: false,
-        singleSourceOnly: false,
-      }),
+      snapshot
+        ? Promise.resolve(this.graph.traceSnapshot(shockNodeId, snapshot, { maxDepth }))
+        : this.graph.traceFrom(shockNodeId, { maxDepth }),
+      snapshot
+        ? Promise.all(
+            snapshot.nodes
+              .filter((node) => node.type === 'drug')
+              .map((node) => this.catalog.getDrug(node.id)),
+          ).then((rows) => rows.filter((row): row is DrugEntity => row !== null))
+        : this.catalog.listDrugs({
+            limit: MAX_PAGE_SIZE,
+            cursorId: null,
+            nlemCriticalOnly: false,
+            singleSourceOnly: false,
+          }),
     ]);
 
     return { shockNode, traced, drugsById: new Map(drugs.map((drug) => [drug.id, drug])) };
@@ -288,4 +307,13 @@ function hashRequest(request: {
   ].join('|');
 
   return createHash('sha256').update(canonical).digest('hex');
+}
+
+function traversalNotes(traced: Awaited<ReturnType<GraphService['traceFrom']>>) {
+  return {
+    pathsPrunedByWeight: traced.result.prunedByWeight,
+    pathsPrunedByCap: traced.result.prunedByCap,
+    graphWasTruncated: traced.graphWasTruncated,
+    droppedEdges: traced.droppedEdges,
+  };
 }

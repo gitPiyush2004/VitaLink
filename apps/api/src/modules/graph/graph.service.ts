@@ -99,6 +99,15 @@ export class GraphService {
     options: { maxDepth?: number } = {},
   ): Promise<{ result: TraversalResult; graphWasTruncated: boolean; droppedEdges: number }> {
     const snapshot = await this.repository.loadAll();
+    return this.traceSnapshot(shockNodeId, snapshot, options);
+  }
+
+  traceSnapshot(
+    shockNodeId: string,
+    snapshot: { nodes: GraphNode[]; edges: GraphEdge[]; wasTruncated?: boolean },
+    options: { maxDepth?: number } = {},
+  ): { result: TraversalResult; graphWasTruncated: boolean; droppedEdges: number } {
+    const wasTruncated = snapshot.wasTruncated ?? false;
     const { graph, droppedEdges } = materialise(snapshot.nodes, snapshot.edges);
 
     if (droppedEdges > 0) {
@@ -114,9 +123,49 @@ export class GraphService {
         maxPathsPerNode: MAX_PATHS_PER_DRUG,
         minPathWeight: MIN_PATH_WEIGHT,
       }),
-      graphWasTruncated: snapshot.wasTruncated,
+      graphWasTruncated: wasTruncated,
       droppedEdges,
     };
+  }
+
+  /** A coherent network derived from the selected catalogue record, not stale upserts. */
+  async forDrug(drugId: string): Promise<BuildResult> {
+    const drug = await this.catalog.getDrug(drugId);
+    if (drug === null) return { nodes: [], edges: [], absentRelations: [] };
+    const [manufacturers, ingredients] = await Promise.all([
+      this.catalog.getManufacturers(drug.manufacturerIds),
+      this.catalog.getIngredients(drug.ingredientIds),
+    ]);
+    return buildGraph({ drugs: [drug], manufacturers, ingredients });
+  }
+
+  /** Finds observed products connected to the selected upstream entity. No global graph rewrite. */
+  async forShock(shockNodeId: string): Promise<BuildResult> {
+    const drugs = [];
+    let cursorId: string | null = null;
+    for (;;) {
+      const page = await this.catalog.listDrugs({
+        limit: MAX_PAGE_SIZE,
+        cursorId,
+        nlemCriticalOnly: false,
+        singleSourceOnly: false,
+      });
+      const current = page.slice(0, MAX_PAGE_SIZE);
+      drugs.push(
+        ...current.filter(
+          (drug) =>
+            drug.ingredientIds.includes(shockNodeId) || drug.manufacturerIds.includes(shockNodeId),
+        ),
+      );
+      if (page.length <= MAX_PAGE_SIZE) break;
+      cursorId = current.at(-1)?.id ?? null;
+      if (!cursorId) break;
+    }
+    const [manufacturers, ingredients] = await Promise.all([
+      this.catalog.getManufacturers([...new Set(drugs.flatMap((drug) => drug.manufacturerIds))]),
+      this.catalog.getIngredients([...new Set(drugs.flatMap((drug) => drug.ingredientIds))]),
+    ]);
+    return buildGraph({ drugs, manufacturers, ingredients });
   }
 
   async getNode(nodeId: string): Promise<GraphNode | null> {

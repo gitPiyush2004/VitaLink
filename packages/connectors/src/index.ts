@@ -16,3 +16,4 @@
 export * from './http';
 export * from './sources';
 export * from './carriers';
+export { ReliabilityClient, type ReliabilityRequest } from './reliability.client';

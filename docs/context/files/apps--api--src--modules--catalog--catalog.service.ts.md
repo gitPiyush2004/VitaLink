@@ -1,0 +1,62 @@
+---
+source: 'apps/api/src/modules/catalog/catalog.service.ts'
+component: catalog
+generated: true
+---
+
+# apps/api/src/modules/catalog/catalog.service.ts
+
+[Source on GitHub](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts) · [File index](../FILE_INDEX.md) · [Architecture](../03_SYSTEM_ARCHITECTURE.md) · [Data boundaries](../04_DATA_AND_EVIDENCE.md)
+
+## Responsibility
+
+Orchestrates module domain calculations, dependencies and repository calls; follow imports and public methods below.
+
+**Component:** Assembles observed product/label data and explicit redundancy proxies; labelers are not proven API suppliers or plants.
+
+## Source structure
+
+- `OpenFdaFacts` — TypeAliasDeclaration, [line 37](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L37).
+- `StorageOutcome` — TypeAliasDeclaration, [line 46](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L46).
+- `PRODUCT_SAMPLE_LIMIT` — binding, [line 57](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L57).
+- `LABEL_SAMPLE_LIMIT` — binding, [line 59](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L59).
+- `CatalogService` — ClassDeclaration, [line 61](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L61).
+- `CatalogService.refreshDrug` — method, [line 79](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L79).
+- `CatalogService.fetchOpenFdaFacts` — method, [line 143](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L143).
+- `CatalogService.getDrug` — method, [line 165](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L165).
+- `CatalogService.listDrugs` — method, [line 169](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L169).
+- `CatalogService.getManufacturers` — method, [line 178](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L178).
+- `CatalogService.getIngredients` — method, [line 182](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L182).
+- `CatalogService.countDrugs` — method, [line 186](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L186).
+- `CatalogService.readStorage` — method, [line 197](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L197).
+- `CatalogService.interpretStorage` — method, [line 237](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L237).
+- `CatalogService.buildManufacturers` — method, [line 281](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L281).
+- `CatalogService.buildIngredients` — method, [line 312](https://github.com/gitPiyush2004/VitaLink/blob/main/apps/api/src/modules/catalog/catalog.service.ts#L312).
+
+## Static dependencies
+
+- [apps/api/src/modules/catalog/catalog.repository.ts](./apps--api--src--modules--catalog--catalog.repository.ts.md)
+- [apps/api/src/modules/catalog/catalog.types.ts](./apps--api--src--modules--catalog--catalog.types.ts.md)
+- [apps/api/src/modules/catalog/domain/drug-assembly.ts](./apps--api--src--modules--catalog--domain--drug-assembly.ts.md)
+- [apps/api/src/modules/catalog/domain/redundancy-derivation.ts](./apps--api--src--modules--catalog--domain--redundancy-derivation.ts.md)
+- [apps/api/src/modules/catalog/domain/storage-parsing.ts](./apps--api--src--modules--catalog--domain--storage-parsing.ts.md)
+- [apps/api/src/shared/errors/index.ts](./apps--api--src--shared--errors--index.ts.md)
+- [apps/api/src/shared/logger/index.ts](./apps--api--src--shared--logger--index.ts.md)
+- [packages/connectors/src/index.ts](./packages--connectors--src--index.ts.md)
+- [packages/contracts/src/index.ts](./packages--contracts--src--index.ts.md)
+- [packages/graph/src/index.ts](./packages--graph--src--index.ts.md)
+
+Other import specifiers: none.
+
+## Static consumers
+
+- [apps/api/src/modules/catalog/catalog.controller.ts](./apps--api--src--modules--catalog--catalog.controller.ts.md)
+- [apps/api/src/modules/catalog/index.ts](./apps--api--src--modules--catalog--index.ts.md)
+
+## Maintenance and verification
+
+Inspect the source and direct dependencies before changing behavior. Use [validation guidance](../07_LOCAL_SETUP_AND_VALIDATION.md) and the relevant component tests. Dependency edges are static imports/re-exports, not a complete call graph. Declarations are structural evidence, not a claim that an integration ran.
+
+Source SHA-256: `ee9f6d5ecc3f664531d9aa71f128c6a531d9b9607d0f8dc66a7592564f534519`.
+
+Generated by `npm run docs:context`; edit curated roles or authored overview notes, then regenerate. Do not edit this card manually.

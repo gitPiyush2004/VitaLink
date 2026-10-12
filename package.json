@@ -34,12 +34,15 @@
     "gate:no-fake-quotes": "tsx scripts/gates/gate-5-no-fake-quotes.ts",
     "gate:secrets": "tsx scripts/gates/gate-secrets.ts",
     "gates": "npm run gate:provenance && npm run gate:no-fixtures && npm run gate:no-http && npm run gate:no-fake-quotes && npm run gate:secrets",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run gates",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run gates && npm run docs:context:check",
     "prepare": "husky || true",
     "bootstrap:org": "npm run bootstrap:org --workspace @vitalink/api --",
     "refresh:catalog": "npm run refresh:catalog --workspace @vitalink/api --",
     "rebuild:graph": "npm run rebuild:graph --workspace @vitalink/api --",
-    "cascade": "npm run cascade --workspace @vitalink/api --"
+    "cascade": "npm run cascade --workspace @vitalink/api --",
+    "eval:audit": "tsx eval/audit.ts",
+    "docs:context": "node scripts/docs/context.mjs",
+    "docs:context:check": "node scripts/docs/context.mjs --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

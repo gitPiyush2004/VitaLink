@@ -13,15 +13,18 @@
  * Queues and consumers are registered in the phases that introduce them.
  */
 
+import { startOperationsWorker } from '@modules/operations';
 import { connectMongo, connectRedis, disconnectMongo, disconnectRedis } from '@shared/db';
 import { logger } from '@shared/logger';
 
 let isShuttingDown = false;
+let closeOperations: (() => Promise<void>) | undefined;
 
 async function start(): Promise<void> {
   await connectMongo();
   await connectRedis();
-  logger.info('vitalink workers started (no queues registered yet)');
+  closeOperations = await startOperationsWorker();
+  logger.info('vitalink regulatory ingestion worker started');
 }
 
 async function shutdown(signal: string): Promise<void> {
@@ -31,6 +34,7 @@ async function shutdown(signal: string): Promise<void> {
 
   // Workers are closed before the datastores so an in-flight job can finish its
   // write. Closing Mongo first would fail that write and leave a half-done job.
+  await closeOperations?.();
   await disconnectMongo();
   await disconnectRedis();
   process.exit(0);

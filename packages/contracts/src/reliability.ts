@@ -22,9 +22,9 @@ import { provenanceSchema, quantitySchema } from './provenance';
 export const reliabilityInputSchema = z.object({
   drug_id: idSchema,
 
-  /** Distinct API suppliers observed for this drug. DERIVED from openFDA NDC. */
+  /** Caller-supplied API redundancy. FDA labelers cannot establish independent API suppliers. */
   z_api: z.number().int().min(1),
-  /** Registered establishments per plant echelon. DERIVED from DailyMed SPL. */
+  /** Caller-supplied plant redundancy; the operations workflow uses a labeler-concentration proxy. */
   z_plant: z.number().int().min(1),
   /** Production lines per plant. Not public anywhere; defaults to 1 as a SCENARIO. */
   z_line: z.number().int().min(1),

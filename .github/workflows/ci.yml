@@ -41,6 +41,9 @@ jobs:
       - name: gates 1, 2, 3, 5 and secret scan
         run: npm run gates
 
+      - name: documentation coverage and links
+        run: npm run docs:context:check
+
   brain:
     name: brain — ruff, mypy, pytest (includes GATE 4)
     runs-on: ubuntu-latest

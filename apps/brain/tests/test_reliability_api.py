@@ -82,6 +82,20 @@ class TestReliabilityFit:
             assert quantity["band"] is not None
             assert quantity["band"]["low"] <= quantity["value"] <= quantity["band"]["high"]
 
+    def test_wire_format_omits_unset_optional_provenance_but_keeps_required_nulls(self) -> None:
+        body = post_fit(fit_request())
+        quantity = body["r"]
+        assert quantity["unit"] is None
+        assert quantity["provenance"]["query"] is None
+        assert "llm_model" not in quantity["provenance"]
+        assert "prompt_hash" not in quantity["provenance"]
+
+    def test_year_bands_are_not_clipped_as_probabilities(self) -> None:
+        body = post_fit(fit_request())
+        quantity = body["mean_time_to_failure_years"]
+        assert quantity["value"] > 1
+        assert quantity["band"]["low"] < quantity["value"] < quantity["band"]["high"]
+
     def test_every_figure_carries_its_equation(self) -> None:
         body = post_fit(fit_request())
 
@@ -100,7 +114,7 @@ class TestReliabilityFit:
         assert assumptions["component_lifetimes_assumed_exponential"] is True
         # The two limitations discovered during the build, restated on the number
         # itself rather than only in a document nobody opens.
-        assert assumptions["z_api_counts_observable_market_not_api_manufacturers"] is True
+        assert "labeler counts" in assumptions["z_api_interpretation"]
         assert assumptions["mu_fitted_only_from_resolved_shortages_so_is_optimistic"] is True
 
     def test_the_response_says_which_rates_were_fitted_and_which_fell_back(self) -> None:

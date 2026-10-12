@@ -1,13 +1,29 @@
 # Vitalink
 
-An open-data pharmaceutical supply-chain resilience platform. It watches public
-sources for disruptions, traces how one shock propagates through a supply graph
-built from live regulatory data, quantifies the exposure, and produces a carrier
-recommendation whose every constraint came from the drug's own label.
+A medicine supply investigation workspace for procurement and supply-chain
+analysts working with FDA-regulated products. Watch actual shortage presentations
+and recalls, preserve their scope, identify related medicines, trace a stated
+upstream disruption, compare response options, and record the decision.
 
-The whole system runs on data anyone can fetch: openFDA, GDELT, UN Comtrade,
-OpenStreetMap, USGS. No dataset is bundled, and there is a CI gate that fails the
-build if one ever is.
+The operations workspace connects the existing signal, graph, reliability and
+carrier engines. It distinguishes official source evidence, derived relationships,
+model outputs and operator assumptions. Inventory and supplier offers come from
+the operator; the application does not infer them from public records.
+
+The globe and layered panels take visual inspiration from
+[God’s Eye View](https://github.com/bilawalsidhu/gods-eye-view). Map points identify
+recalling-firm cities, not factories or delivery routes.
+
+Start with the [project context vault](docs/context/00_START_HERE.md) for the
+purpose, current state, architecture, evidence limits, research and roadmap.
+The [file index](docs/context/FILE_INDEX.md) links a context note for every
+versionable file outside that vault, with source declarations, dependencies,
+consumers and fingerprints. Open `docs/context` as an Obsidian vault or read the
+same notes on GitHub. The overview was authored through the official Obsidian CLI.
+
+The review is the final review of **academic Phase 1**. Alternative-product
+discovery, public cost benchmarks and road-route exposure comparison are
+[proposed additions](docs/context/06_REVIEW_AND_ROADMAP.md), not completed features.
 
 ---
 
@@ -42,7 +58,8 @@ of them can be honestly produced from open data yet.
 
 ### 1. Prerequisites
 
-Docker Desktop, Node 22+, and Python 3.11+ for the reliability service.
+Docker Desktop (or local MongoDB/Redis), Node 22.12+ or Node 24, and Python 3.11+
+for the reliability service. The installed Vitest version also supports Node 26.
 
 ### 2. Bootstrap
 
@@ -53,8 +70,9 @@ bash scripts/dev/bootstrap.sh          # generates .env with a fresh RS256 keypa
 docker compose -f infra/docker-compose.yml up -d mongo redis
 ```
 
-No API key is required. Every source works unauthenticated; the optional ones
-are listed at the end of the bootstrap output.
+FDA ingestion requires no API key. Geocoding requires a contactable Nominatim
+User-Agent; optional news, trade and carrier integrations have their own access
+requirements. Missing credentials remain visible as unavailable.
 
 ### 3. Create an account
 
@@ -65,25 +83,47 @@ npm run bootstrap:org --workspace @vitalink/api -- "Your Org" you@example.com 'A
 The password policy wants twelve characters, three character classes, and no
 substring of your email local part.
 
-### 4. Populate from live sources
-
-Nothing here is seeded. Each command fetches real data:
+### 4. Start the connected workspace
 
 ```bash
-npm run refresh:catalog --workspace @vitalink/api    # openFDA NDC + labels -> drugs
-npm run rebuild:graph   --workspace @vitalink/api    # -> the supply graph
+python3 -m venv apps/brain/.venv
+apps/brain/.venv/bin/pip install -r apps/brain/requirements.txt
+(cd apps/brain && .venv/bin/uvicorn app.main:app --port 8000 --env-file ../../.env)
 ```
 
-### 5. Start it
+In separate terminals:
 
 ```bash
-npm run dev:api    # http://localhost:4000
-npm run dev:web    # http://localhost:5173
+npm run dev:api      # http://localhost:4000
+npm run dev:workers  # immediate regulatory ingestion, then hourly refreshes
+npm run dev:web      # http://localhost:5173
 ```
 
-Sign in and work left to right across the tabs — they are the loop, in order.
+Sign in, open a regulatory event, then an investigation. Medicine analysis fetches
+its catalogue data on demand. Inspect Analysis, Trace, Logistics, Response and
+Record in that investigation. Sources shows feed coverage, watchlists, and the
+separate signal verification/quarantine workflow. Earlier tools remain available
+through **Analysis tools**.
 
-### 6. Or run the whole loop from the command line
+Alternatively, after bootstrap and configuring `.env`, the complete Compose setup
+uses the supplied API, worker, brain and web Dockerfiles:
+
+```bash
+docker compose -f infra/docker-compose.yml up --build
+```
+
+The web container proxies `/api` on the same origin, preserving the refresh-cookie
+flow. Keep `CARRIER_MOCK_MODE=false` for real-data operation (the template default).
+DSV quote mapping still needs validation with an actual account; the five other
+carriers are unavailable stubs and require adapter implementation as well as
+credentials. No live quote has been established. Container execution remains
+untested on the original development host.
+
+For the module contract and limits, read
+[operations](apps/api/src/modules/operations/README.md). For reproducible data
+coverage evaluation, read [evaluation](eval/README.md).
+
+### 5. Earlier stage tools from the command line
 
 Each script prints the arithmetic rather than just the answer.
 
@@ -103,17 +143,17 @@ config with the flag on.
 
 ## The loop
 
-| Stage      | What it does                                                          | Where                              |
-| ---------- | --------------------------------------------------------------------- | ---------------------------------- |
-| 1 SENSE    | Pulls openFDA enforcement, openFDA shortages, GDELT news              | `modules/signals`                  |
-| 2 VERIFY   | Deduplicates, clusters, corroborates, scores veracity, quarantines    | `modules/signals`                  |
-| 3 MAP      | Builds the supply graph from live openFDA listings and Comtrade flows | `modules/catalog`, `modules/graph` |
-| 4 TRACE    | Propagates one shock forward, accumulating exposure over every path   | `modules/cascade`                  |
-| 5 QUANTIFY | Tucker & Daskin availability model, in Python                         | `apps/brain`                       |
-| 6 SIMULATE | Builds the joint (sourcing × logistics) scenario matrix               | `modules/scenarios`                |
-| 7 DECIDE   | Pareto front, then a weighted objective over it                       | `modules/scenarios`                |
-| 8 EXECUTE  | Carrier eligibility gate, six sub-scores, a ranked recommendation     | `modules/logistics`                |
-| 9 LEARN    | Not built. See "What is not here".                                    | —                                  |
+| Stage      | What it does                                                           | Where                              |
+| ---------- | ---------------------------------------------------------------------- | ---------------------------------- |
+| 1 SENSE    | Pulls openFDA enforcement, openFDA shortages, GDELT news               | `modules/signals`                  |
+| 2 VERIFY   | Deduplicates, clusters, corroborates, scores veracity, quarantines     | `modules/signals`                  |
+| 3 MAP      | Builds ingredient/labeler associations from openFDA catalogue evidence | `modules/catalog`, `modules/graph` |
+| 4 TRACE    | Propagates one shock forward, accumulating exposure over every path    | `modules/cascade`                  |
+| 5 QUANTIFY | Tucker & Daskin availability model, in Python                          | `apps/brain`                       |
+| 6 SIMULATE | Builds the joint (sourcing × logistics) scenario matrix                | `modules/scenarios`                |
+| 7 DECIDE   | Pareto front, then a weighted objective over it                        | `modules/scenarios`                |
+| 8 EXECUTE  | Carrier eligibility, scoring and a recorded recommendation; no booking | `modules/logistics`                |
+| 9 LEARN    | Not built. See "What is not here".                                     | —                                  |
 
 ---
 
@@ -162,17 +202,18 @@ duration.
 Stated plainly, because a capability list that omits the gaps is not a
 capability list.
 
-- **The physical layer.** No geocoded facilities, no hubs, no lanes. Everything
+- **The physical layer.** Recalling-firm cities are geocoded; verified production
+  facilities, hubs, dependency relationships and delivery lanes are absent. Everything
   downstream of it is therefore absent rather than estimated: facilities at
   risk, population affected, rupee loss, cold-chain excursion probability, and
   lane-level risk in carrier scoring. Each is reported as unavailable _with the
   reason_, never as zero.
-- **Five of six carriers.** FedEx, UPS, DHL, Kuehne+Nagel and CEVA have no
-  callable public quote API without an approved commercial account. They are
-  still registered and still appear in every comparison table, with the verified
-  reason on each row — a table showing one price reads as "there is one option"
-  when the truth is "there is one option we can see".
-- **Stage 9, LEARN.** No outcome tracking, so no calibration and no drift
+- **Live carrier integration.** FedEx, UPS, DHL, Kuehne+Nagel and CEVA are
+  unavailable stubs, not credential-ready rate adapters. DSV has a concrete
+  adapter with an unverified quote schema. All stay visible in comparisons with
+  missing-data reasons. Historical portal research is in `docs/CARRIER_STATUS.md`.
+- **Stage 9, LEARN.** Case notes and decision history exist, but no validated
+  outcome series, calibration or drift
   detection. It is also why the `reliability` carrier sub-score is always
   neutral: there is no tracking history to compute an on-time rate from, and
   inventing one would be a fabricated number driving a real decision.
@@ -193,10 +234,11 @@ npm run verify
 ```
 
 Runs, in order: Prettier, ESLint at `--max-warnings 0`, TypeScript across three
-projects, 318 tests, and five CI gates.
+projects, TypeScript tests, five CI gates and context-documentation checks.
+The connected implementation passed 337 TypeScript tests across 21 files.
 
 ```bash
-cd apps/brain && python -m pytest      # 116 tests, including GATE 4
+cd apps/brain && python -m pytest      # 118 tests in the connected implementation, including GATE 4
 ```
 
 **GATE 4** is the one worth knowing about. `apps/brain/tests/test_reliability.py`
@@ -208,14 +250,16 @@ the reliability model ever drifts from the published result, that test fails.
 
 ## Reading the code
 
-Start at `docs/CODE_TOUR.md`, which walks one request end to end.
+Start at [the context vault](docs/context/00_START_HERE.md), then use
+[the file index](docs/context/FILE_INDEX.md). `docs/CODE_TOUR.md` walks an earlier
+request end to end; its historical stages complement the connected workflow notes.
 
 `apps/api/src/modules/auth/README.md` is the reference module: every other
 module copies its layout exactly. `modules/logistics/README.md` and
 `modules/scenarios/README.md` each explain their own design decisions and the
 mistakes that produced them.
 
-The twelve ADRs in `docs/adr/` record the decisions that could reasonably have
+The thirteen ADRs in `docs/adr/` record the decisions that could reasonably have
 gone the other way, including the two that contradict the specification.
 
 ---
@@ -226,13 +270,17 @@ gone the other way, including the two that contradict the specification.
 apps/
   api/       Express 5, the nine-stage loop, one module per stage
   brain/     FastAPI, the Tucker & Daskin reliability model
-  web/       React control tower, one tab per stage
+  web/       React operations workspace and earlier stage tools
   workers/   BullMQ consumers for the scheduled ingestion
 packages/
   contracts/ zod schemas shared by every process — the data covenant lives here
   connectors/ the single HTTP egress point, and the carrier adapters
   graph/     graphology traversal
   ui/        React primitives; `<QuantityValue>` is the important one
-docs/        BUILD_LOG, CODE_TOUR, LEARNING_NOTES, MODEL_CARDS, CARRIER_STATUS, adr/
+docs/        context vault, BUILD_LOG, CODE_TOUR, LEARNING_NOTES, MODEL_CARDS, adr/
 scripts/     the five CI gates, and the source probe
 ```
+
+After changing source or authored context, run `npm run docs:context`, then
+`npm run docs:context:check`. CI checks coverage, fingerprints and local note links;
+it does not require the Obsidian desktop app.
